@@ -1,283 +1,149 @@
 'use strict';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// aiProvider.js — Abstração multi-provider para chamadas de IA (BYOK)
+// aiProvider.js (zelador) — Abstração multi-provider para chamadas de IA (BYOK)
+//
+// Esta versão é para uso DIRETO pelo zelador.js via env vars.
+// O módulo no nível raiz do projeto abstrai para o Electron (via IPC).
 //
 // Suporta:
-//   - Anthropic Claude Haiku  (@anthropic-ai/sdk)
-//   - Google Gemini Flash      (@google/generative-ai)
+//   - Google Gemini Flash  (@google/generative-ai)
+//   - Anthropic Claude Haiku (@anthropic-ai/sdk)
 //
-// SEGURANÇA: As chaves de API NUNCA são logadas, nem parcialmente.
-//            Sempre recebidas via parâmetro — jamais hardcoded.
+// SEGURANCA: As chaves NUNCA são logadas, nem parcialmente.
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ─── Erros customizados ──────────────────────────────────────────────────────
-
-class InvalidKeyError extends Error {
-  constructor(provider, detail = '') {
-    super(`Chave de API inválida para ${provider}.${detail ? ' ' + detail : ''}`);
-    this.name = 'InvalidKeyError';
-    this.provider = provider;
-  }
-}
-
-class RateLimitError extends Error {
-  constructor(provider) {
-    super(`Rate limit atingido para ${provider}. Nota será tentada novamente na próxima execução.`);
-    this.name = 'RateLimitError';
-    this.provider = provider;
-  }
-}
-
-class ProviderUnavailableError extends Error {
-  constructor(provider, detail = '') {
-    super(`Provider ${provider} indisponível.${detail ? ' ' + detail : ''} Nota será processada na próxima execução.`);
-    this.name = 'ProviderUnavailableError';
-    this.provider = provider;
-  }
-}
-
-class TimeoutError extends Error {
-  constructor(provider) {
-    super(`Timeout de 30s ao chamar ${provider}. Nota será processada na próxima execução.`);
-    this.name = 'TimeoutError';
-    this.provider = provider;
-  }
-}
-
-// ─── Logger ──────────────────────────────────────────────────────────────────
-
-function log(msg) {
-  const t = new Date().toISOString().slice(11, 19); // HH:MM:SS
-  console.log(`[${t}] [ai] ${msg}`);
-}
-
-// ─── Catálogo de providers ────────────────────────────────────────────────────
-
-const PROVIDERS = [
-  {
-    id: 'anthropic',
-    name: 'Anthropic Claude Haiku',
-    model: 'claude-haiku-4-5-20251001',
-    costPer1kTokens: 0.00025, // $0.25 / 1M input tokens
-  },
-  {
-    id: 'google',
-    name: 'Google Gemini Flash',
-    model: 'gemini-1.5-flash',
-    costPer1kTokens: 0.000075, // $0.075 / 1M input tokens
-  },
-];
-
-// ─── System prompt compartilhado ─────────────────────────────────────────────
 
 const SYSTEM_PROMPT =
   'Você é um sistema de compressão de conhecimento efêmero. ' +
-  'Resuma a nota em exatamente uma frase objetiva em português brasileiro, ' +
+  'Resuma a nota fornecida em exatamente uma frase objetiva em português brasileiro, ' +
   'preservando a ideia central. ' +
-  'Retorne APENAS a frase, sem prefixos, sem markdown.';
+  'Retorne APENAS a frase. Sem prefixo como "Resumo:". Sem markdown. Termine com ponto final.';
 
-// ─── Timeout wrapper ─────────────────────────────────────────────────────────
+const TIMEOUT_MS = 30000;
 
-/**
- * Envolve uma Promise com um timeout.
- * @template T
- * @param {Promise<T>} promise
- * @param {number} ms
- * @param {string} provider
- * @returns {Promise<T>}
- */
-function withTimeout(promise, ms, provider) {
+function log(msg) {
+  const t = new Date().toISOString().slice(11, 19);
+  console.log(`[${t}] [ai] ${msg}`);
+}
+
+function withTimeout(promise, ms, label) {
   const timer = new Promise((_, reject) =>
-    setTimeout(() => reject(new TimeoutError(provider)), ms)
+    setTimeout(() => {
+      const err = new Error(`Timeout de ${ms / 1000}s ao chamar ${label}.`);
+      err.code = 'TIMEOUT';
+      reject(err);
+    }, ms)
   );
   return Promise.race([promise, timer]);
 }
 
-/**
- * Aguarda N milissegundos.
- * @param {number} ms
- */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(r => setTimeout(r, ms));
 }
 
-// ─── Implementação Anthropic ─────────────────────────────────────────────────
+// ─── Google Gemini ────────────────────────────────────────────────────────────
+async function callGoogle(content, apiKey, isRetry = false) {
+  const { GoogleGenerativeAI } = require('@google/generative-ai');
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-/**
- * Chama a API Anthropic com retry em caso de rate limit.
- * @param {string} content - Conteúdo completo da nota
- * @param {string} apiKey  - Chave Anthropic do usuário
- * @param {boolean} [isRetry=false]
- * @returns {Promise<string>} Resumo de uma frase
- */
+  try {
+    const result = await withTimeout(
+      model.generateContent(SYSTEM_PROMPT + '\n\nNota:\n' + content),
+      TIMEOUT_MS,
+      'google'
+    );
+    return result.response.text().trim();
+  } catch (err) {
+    if (err.code === 'TIMEOUT') throw err;
+
+    const msg    = err.message || '';
+    const status = err.status ?? err.statusCode ?? 0;
+
+    if (status === 400 && msg.includes('API_KEY') || status === 401 || status === 403 || msg.includes('PERMISSION_DENIED')) {
+      const e = new Error('Chave Google inválida. Verifique em aistudio.google.com.');
+      e.code = 'INVALID_KEY'; throw e;
+    }
+    if (status === 429 || msg.includes('RESOURCE_EXHAUSTED')) {
+      if (isRetry) {
+        const e = new Error('Rate limit Google atingido após retry.');
+        e.code = 'RATE_LIMIT'; throw e;
+      }
+      log('Rate limit Google. Aguardando 60s...');
+      await sleep(60000);
+      return callGoogle(content, apiKey, true);
+    }
+    if (status >= 500 || msg.includes('UNAVAILABLE')) {
+      const e = new Error(`Serviço Google indisponível (HTTP ${status}).`);
+      e.code = 'PROVIDER_UNAVAILABLE'; throw e;
+    }
+    const e = new Error(msg || 'Erro desconhecido Google.');
+    e.code = 'PROVIDER_UNAVAILABLE'; throw e;
+  }
+}
+
+// ─── Anthropic Claude ─────────────────────────────────────────────────────────
 async function callAnthropic(content, apiKey, isRetry = false) {
-  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const Anthropic = require('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey });
 
   try {
     const response = await withTimeout(
       client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model:     'claude-haiku-4-5-20251001',
         max_tokens: 200,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content }],
+        system:     SYSTEM_PROMPT,
+        messages:  [{ role: 'user', content }],
       }),
-      30000,
+      TIMEOUT_MS,
       'anthropic'
     );
-
-    const resumo = response.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
-      .trim();
-
-    return resumo;
-
+    return response.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
   } catch (err) {
-    if (err instanceof TimeoutError) throw err;
+    if (err.code === 'TIMEOUT') throw err;
 
     const status = err.status ?? err.statusCode ?? 0;
 
-    // Autenticação inválida
     if (status === 401) {
-      throw new InvalidKeyError('anthropic', 'Verifique sua chave em console.anthropic.com.');
+      const e = new Error('Chave Anthropic inválida. Verifique em console.anthropic.com.');
+      e.code = 'INVALID_KEY'; throw e;
     }
-
-    // Rate limit — aguarda 60s e tenta uma vez
     if (status === 429) {
-      if (isRetry) throw new RateLimitError('anthropic');
-      log('Rate limit Anthropic. Aguardando 60s antes de nova tentativa...');
+      if (isRetry) {
+        const e = new Error('Rate limit Anthropic atingido após retry.');
+        e.code = 'RATE_LIMIT'; throw e;
+      }
+      log('Rate limit Anthropic. Aguardando 60s...');
       await sleep(60000);
       return callAnthropic(content, apiKey, true);
     }
-
-    // Erros 5xx = serviço indisponível
     if (status >= 500) {
-      throw new ProviderUnavailableError('anthropic', `HTTP ${status}`);
+      const e = new Error(`Serviço Anthropic indisponível (HTTP ${status}).`);
+      e.code = 'PROVIDER_UNAVAILABLE'; throw e;
     }
-
-    // Outros erros inesperados
-    throw new ProviderUnavailableError('anthropic', err.message);
+    const e = new Error(err.message || 'Erro desconhecido Anthropic.');
+    e.code = 'PROVIDER_UNAVAILABLE'; throw e;
   }
 }
 
-// ─── Implementação Google Gemini ─────────────────────────────────────────────
+// ─── Interface pública ────────────────────────────────────────────────────────
 
 /**
- * Chama a API Google Gemini com retry em caso de rate limit.
- * @param {string} content - Conteúdo completo da nota
- * @param {string} apiKey  - Chave Google AI do usuário
- * @param {boolean} [isRetry=false]
- * @returns {Promise<string>} Resumo de uma frase
- */
-async function callGoogle(content, apiKey, isRetry = false) {
-  const { GoogleGenerativeAI } = await import('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-  try {
-    const prompt = `${SYSTEM_PROMPT}\n\nNota:\n${content}`;
-
-    const result = await withTimeout(
-      model.generateContent(prompt),
-      30000,
-      'google'
-    );
-
-    const resumo = result.response.text().trim();
-    return resumo;
-
-  } catch (err) {
-    if (err instanceof TimeoutError) throw err;
-
-    const message = err.message || '';
-    const status = err.status ?? err.statusCode ?? 0;
-
-    // API key inválida
-    if (
-      status === 400 && message.includes('API_KEY') ||
-      status === 403 ||
-      message.toLowerCase().includes('api key not valid') ||
-      message.toLowerCase().includes('invalid api key')
-    ) {
-      throw new InvalidKeyError('google', 'Verifique sua chave em aistudio.google.com.');
-    }
-
-    // Rate limit (429 ou RESOURCE_EXHAUSTED)
-    if (status === 429 || message.includes('RESOURCE_EXHAUSTED')) {
-      if (isRetry) throw new RateLimitError('google');
-      log('Rate limit Google. Aguardando 60s antes de nova tentativa...');
-      await sleep(60000);
-      return callGoogle(content, apiKey, true);
-    }
-
-    // Serviço indisponível
-    if (status >= 500 || message.includes('UNAVAILABLE') || message.includes('SERVICE_UNAVAILABLE')) {
-      throw new ProviderUnavailableError('google', `HTTP ${status || message}`);
-    }
-
-    throw new ProviderUnavailableError('google', message);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INTERFACE PÚBLICA
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Lista os providers de IA disponíveis com metadados de custo e modelo.
- *
- * @returns {Array<{ id: string, name: string, model: string, costPer1kTokens: number }>}
+ * Lista os providers disponíveis.
  */
 function listProviders() {
-  return PROVIDERS.map(p => ({ ...p })); // cópia defensiva
+  return [
+    { id: 'google',    name: 'Google Gemini',    model: 'gemini-1.5-flash',         costPer1kTokens: 0.000075 },
+    { id: 'anthropic', name: 'Anthropic Claude', model: 'claude-haiku-4-5-20251001', costPer1kTokens: 0.00025  },
+  ];
 }
 
 /**
- * Valida uma chave de API fazendo uma chamada mínima ao provider.
+ * Comprime uma nota em uma frase usando o provider configurado.
  *
- * @param {'anthropic'|'google'} provider
- * @param {string} apiKey
- * @returns {Promise<{ valid: boolean, error?: string }>}
- */
-async function validateKey(provider, apiKey) {
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
-    return { valid: false, error: 'Chave não pode ser vazia.' };
-  }
-
-  const testContent = 'Teste de validação de chave.';
-
-  try {
-    if (provider === 'anthropic') {
-      await callAnthropic(testContent, apiKey);
-    } else if (provider === 'google') {
-      await callGoogle(testContent, apiKey);
-    } else {
-      return { valid: false, error: `Provider desconhecido: ${provider}` };
-    }
-    log(`Chave ${provider} validada com sucesso.`);
-    return { valid: true };
-  } catch (err) {
-    if (err instanceof InvalidKeyError) {
-      return { valid: false, error: err.message };
-    }
-    // Rate limit ou indisponibilidade não significa chave inválida
-    return { valid: true, error: `Aviso: ${err.message}` };
-  }
-}
-
-/**
- * Comprime o conteúdo de uma nota em uma única frase usando o provider configurado.
- *
- * @param {string} content - Conteúdo completo da nota (sem frontmatter)
- * @param {{ provider: 'anthropic'|'google', apiKey: string }} providerConfig
- * @returns {Promise<string>} Resumo de uma frase em português
- * @throws {InvalidKeyError} Chave inválida
- * @throws {RateLimitError} Rate limit após retry
- * @throws {ProviderUnavailableError} Serviço indisponível
- * @throws {TimeoutError} Timeout de 30s
+ * @param {string} content         - Conteúdo da nota
+ * @param {{ provider: string, apiKey: string }} providerConfig
+ * @returns {Promise<string>}
  */
 async function compress(content, providerConfig) {
   const { provider, apiKey } = providerConfig;
@@ -288,31 +154,47 @@ async function compress(content, providerConfig) {
 
   log(`Comprimindo nota via ${provider}...`);
 
-  let resumo;
-  if (provider === 'anthropic') {
-    resumo = await callAnthropic(content, apiKey);
-  } else if (provider === 'google') {
-    resumo = await callGoogle(content, apiKey);
+  let result;
+  if (provider === 'google') {
+    result = await callGoogle(content, apiKey);
+  } else if (provider === 'anthropic') {
+    result = await callAnthropic(content, apiKey);
   } else {
-    throw new ProviderUnavailableError(provider, 'Provider não reconhecido. Use "anthropic" ou "google".');
+    const e = new Error(`Provider desconhecido: "${provider}". Use "google" ou "anthropic".`);
+    e.code = 'PROVIDER_UNAVAILABLE'; throw e;
   }
 
-  // Sanitiza: garante que seja uma string não-vazia
-  if (!resumo || typeof resumo !== 'string' || resumo.trim() === '') {
-    throw new ProviderUnavailableError(provider, 'Resposta vazia — provider retornou conteúdo inválido.');
+  if (!result || typeof result !== 'string' || result.trim() === '') {
+    const e = new Error('Provider retornou resposta vazia.');
+    e.code = 'PROVIDER_UNAVAILABLE'; throw e;
   }
 
-  log(`Compressão concluída (${resumo.length} chars).`);
-  return resumo.trim();
+  log(`Compressao concluida (${result.length} caracteres).`);
+  return result.trim();
 }
 
-module.exports = {
-  compress,
-  validateKey,
-  listProviders,
-  // Erros exportados para que o chamador possa fazer instanceof
-  InvalidKeyError,
-  RateLimitError,
-  ProviderUnavailableError,
-  TimeoutError,
-};
+/**
+ * Valida uma API key fazendo uma chamada minima.
+ *
+ * @param {'google'|'anthropic'} provider
+ * @param {string} apiKey
+ * @returns {Promise<{ valid: boolean, error?: string }>}
+ */
+async function validateKey(provider, apiKey) {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    return { valid: false, error: 'Chave nao pode ser vazia.' };
+  }
+
+  try {
+    await compress('teste de validacao de chave.', { provider, apiKey });
+    return { valid: true };
+  } catch (err) {
+    if (err.code === 'INVALID_KEY') {
+      return { valid: false, error: err.message };
+    }
+    // Rate limit ou indisponibilidade nao significa chave invalida
+    return { valid: true, error: `Aviso: ${err.message}` };
+  }
+}
+
+module.exports = { compress, validateKey, listProviders };

@@ -237,8 +237,9 @@ async function loadRecentActivity() {
     }
     const colors = { ok:'var(--color-vital)', warn:'var(--color-desconexao)', error:'var(--color-dissolucao)' };
     el.innerHTML = logs.slice(-10).reverse().map(line => {
-      const cls = line.includes('✅') || line.includes('✔') ? 'ok'
-        : line.includes('❌') || line.includes('💥') ? 'error' : 'warn';
+      const lower = line.toLowerCase();
+      const cls = (lower.includes('erro') || lower.includes('fatal') || lower.includes('[f') && lower.includes('erro')) ? 'error'
+        : (lower.includes('aviso') || lower.includes('warn')) ? 'warn' : 'ok';
       return `<div class="activity-item">
         <span class="activity-dot" style="background:${colors[cls]}"></span>
         <div class="activity-body">
@@ -277,7 +278,7 @@ function renderPurgatorio() {
 
   const tbody = $('purgatory-tbody');
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Nenhuma nota no purgatório 🎉</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Nenhuma nota no purgatório.</td></tr>';
     return;
   }
 
@@ -302,7 +303,8 @@ function renderPurgatorio() {
       try {
         // TODO: ligação com IPC real
         btn.closest('tr').style.opacity = '0.4';
-        btn.textContent = '✓ Imunizada';
+        btn.textContent = 'Imunizada';
+        btn.disabled = true;
       } catch (e) { btn.textContent = 'Erro'; }
     });
   });

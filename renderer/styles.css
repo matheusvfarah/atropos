@@ -354,7 +354,7 @@ body { display: flex; flex-direction: column; height: 100vh; }
 
 /* Atividade */
 .activity-panel { min-width: 0; }
-.activity-list  {}
+.activity-list  { max-height: 320px; overflow-y: auto; }
 .activity-item {
   display: flex;
   gap: 10px;
@@ -389,6 +389,7 @@ body { display: flex; flex-direction: column; height: 100vh; }
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 .purgatory-table th {
   text-align: left;
@@ -405,11 +406,11 @@ body { display: flex; flex-direction: column; height: 100vh; }
   border-bottom: 0.5px solid var(--border-subtle);
   color: var(--text-secondary);
 }
-.table-empty { color: var(--text-tertiary); font-style: italic; padding: 24px 12px !important; }
+.table-empty { color: var(--text-tertiary); font-style: italic; padding: 24px 12px !important; text-align: center; }
 .row-urgent td  { background: rgba(153,60,29,0.05); }
-.note-link { color: #7F77DD; cursor: pointer; transition: color var(--transition-fast); }
+.note-link { color: #7F77DD; cursor: pointer; transition: color var(--transition-fast); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .note-link:hover { color: #AFA9EC; }
-.note-path { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+.note-path { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); word-break: break-all; }
 
 /* Badges */
 .badge-decay {
@@ -446,7 +447,11 @@ body { display: flex; flex-direction: column; height: 100vh; }
 }
 .settings-row {
   display: flex; justify-content: space-between;
-  align-items: center; gap: 24px; padding: 8px 0;
+  align-items: flex-start; gap: 24px; padding: 10px 0;
+}
+.settings-row-info {
+  flex: 1;
+  min-width: 0;
 }
 .settings-row-info label {
   font-size: 13px; font-weight: 500; color: var(--text-primary);
@@ -455,6 +460,7 @@ body { display: flex; flex-direction: column; height: 100vh; }
 .settings-row-info p { font-size: 12px; color: var(--text-tertiary); }
 .settings-row-control {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding-top: 2px;
 }
 .path-display {
   font-family: var(--font-mono); font-size: 12px;

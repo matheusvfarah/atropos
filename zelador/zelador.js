@@ -166,20 +166,31 @@ async function main() {
         const result = await applyPhase2(filePath, VAULT_PATH, frontmatterData);
         if (result.success) {
           stats.phase2++;
-          log(`🔗 [F2] ${noteTitle}: ${result.filesModified} arquivo(s), ${result.linksRemoved} link(s) removido(s)`);
+          log(`[F2] ${noteTitle}: ${result.filesModified} arquivo(s), ${result.linksRemoved} link(s) removido(s)`);
         } else if (result.error !== 'already_processed') {
           stats.errors++;
-          log(`❌ [F2] ${noteTitle}: ${result.error}`);
+          log(`[F2] ERRO ${noteTitle}: ${result.error}`);
+        } else {
+          stats.skipped_already++;
         }
 
-      // ── FASE 3 ──
+      // -- FASE 3 --
       } else if (phase === 3) {
         if (currentLevel >= 3) {
           stats.skipped_already++;
           continue;
         }
-        // F3 registrada como pendente — será implementada na Etapa 4
-        log(`⏳ [F3 pendente] ${noteTitle} — Etapa 4 necessária`);
+        const f3result = await applyPhase3(filePath, VAULT_PATH, frontmatterData);
+        if (f3result.success) {
+          stats.phase3++;
+          log(`[F3] ${noteTitle}: fossilizado -> ${f3result.fossilizedPath}`);
+          log(`     Resumo: "${f3result.summary}"`);
+        } else if (f3result.error !== 'already_processed') {
+          stats.errors++;
+          log(`[F3] ERRO ${noteTitle}: ${f3result.error}`);
+        } else {
+          stats.skipped_already++;
+        }
       }
 
     } catch (err) {
@@ -188,35 +199,35 @@ async function main() {
     }
   }
 
-  // ── Gera PURGATORIO.md ──
-  log('📋 Atualizando PURGATORIO.md...');
+  // -- Gera PURGATORIO.md --
+  log('Atualizando PURGATORIO.md...');
   try {
     const { items } = await generatePurgatory(VAULT_PATH, config, resolveConfig);
-    log(`🔥 Purgatório: ${items} nota(s) listada(s).`);
+    log(`Purgatorio: ${items} nota(s) listada(s).`);
   } catch (err) {
-    log(`⚠️  Erro ao gerar PURGATORIO.md: ${err.message}`);
+    log(`AVISO: Erro ao gerar PURGATORIO.md: ${err.message}`);
   }
 
-  // ── Atualiza state.json ──
+  // -- Atualiza state.json --
   updateState(VAULT_PATH, { lastRun: new Date().toISOString() });
 
-  // ── Relatório final ──
+  // -- Relatorio final --
   log('');
   log('─────────────────────────────────────');
-  log('📊 RELATÓRIO DE EXECUÇÃO');
-  log(`   🌵 Fase 1 (Estiagem):       ${stats.phase1}`);
-  log(`   🔗 Fase 2 (Desconexão):     ${stats.phase2}`);
-  log(`   💀 Fase 3 (Dissolução):     ${stats.phase3}`);
-  log(`   🛡️  Imunes (puladas):        ${stats.skipped_immune}`);
-  log(`   ↩️  Já processadas:          ${stats.skipped_already}`);
-  log(`   💤 Abaixo do threshold:     ${stats.skipped_below_threshold}`);
-  log(`   ❌ Erros:                   ${stats.errors}`);
+  log('RELATORIO DE EXECUCAO');
+  log(`  Fase 1 (Estiagem):          ${stats.phase1}`);
+  log(`  Fase 2 (Desconexao):        ${stats.phase2}`);
+  log(`  Fase 3 (Dissolucao):        ${stats.phase3}`);
+  log(`  Imunes (puladas):           ${stats.skipped_immune}`);
+  log(`  Ja processadas:             ${stats.skipped_already}`);
+  log(`  Abaixo do threshold:        ${stats.skipped_below_threshold}`);
+  log(`  Erros:                      ${stats.errors}`);
   log('─────────────────────────────────────');
-  log('✅ Zelador finalizado.');
+  log('Zelador finalizado.');
 }
 
 main().catch((err) => {
-  console.error(`[${new Date().toISOString()}] 💥 Erro fatal: ${err.message}`);
+  console.error(`[${new Date().toISOString()}] FATAL: ${err.message}`);
   console.error(err.stack);
   process.exit(1);
 });

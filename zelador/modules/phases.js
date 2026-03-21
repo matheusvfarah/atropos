@@ -157,10 +157,71 @@ async function applyPhase2(filePath, vaultPath, frontmatter) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * @placeholder - será implementado na Etapa 4
+ * @param {string} filePath       - Caminho absoluto da nota
+ * @param {string} vaultPath      - Raiz do vault
+ * @param {object} frontmatterData - Frontmatter ja parseado
+ * @returns {Promise<{ success: boolean, summary?: string, fossilizedPath?: string, error?: string }>}
  */
-async function applyPhase3(_filePath, _currentData, _vaultPath) {
-  throw new Error('Fase 3 ainda não implementada — aguarda Etapa 4');
+async function applyPhase3(filePath, vaultPath, frontmatterData) {
+  const noteName = path.basename(filePath, '.md');
+  const log      = makeLogger('F3', noteName);
+
+  // -- Pre-condicao: nao reprocessar --
+  if ((frontmatterData.decay_level ?? 0) >= 3) {
+    log('Ja fossilizada (decay_level >= 3). Pulando.');
+    return { success: false, error: 'already_processed' };
+  }
+
+  // -- PASSO 1: Git snapshot obrigatorio --
+  if (git.isGitRepo(vaultPath)) {
+    log('Criando snapshot Git pre-F3...');
+    const { success: gitOk, commitHash, skipped, error: gitError } = git.commitSnapshot(vaultPath, noteName, 'F3');
+    if (!gitOk) {
+      log(`Git falhou: ${gitError}. Abortando F3.`);
+      return { success: false, error: `Git falhou: ${gitError}` };
+    }
+    log(`Snapshot: ${skipped ? '(vault limpo)' : commitHash}`);
+  }
+
+  // -- PASSO 2: Ler conteudo completo da nota --
+  let content;
+  try {
+    content = fs.readFileSync(filePath, { encoding: 'utf-8' });
+  } catch (err) {
+    return { success: false, error: `Falha ao ler arquivo: ${err.message}` };
+  }
+
+  // -- PASSO 3: Configurar provider via env vars --
+  const aiProvider = require('./aiProvider');
+  const provider = process.env.AI_PROVIDER || 'google';
+  const apiKey   = provider === 'anthropic'
+    ? process.env.ANTHROPIC_API_KEY
+    : process.env.GOOGLE_AI_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, error: `Nenhuma API key configurada para provider "${provider}". Adicione ao zelador/.env.` };
+  }
+
+  // -- PASSO 4: Comprimir via IA --
+  let summary;
+  try {
+    summary = await aiProvider.compress(content, { provider, apiKey });
+    log(`Resumo gerado: "${summary}"`);
+  } catch (err) {
+    return { success: false, error: `IA falhou (${err.code || 'UNKNOWN'}): ${err.message}` };
+  }
+
+  // -- PASSO 5: Fossilizar (copia + nota leve) --
+  const fossilizer = require('./fossilizer');
+  const { fossilizedPath } = fossilizer.fossilize(filePath, vaultPath, summary);
+
+  // -- PASSO 6: Registrar no state.json --
+  updateState(vaultPath, {
+    lastF3: { file: filePath, noteName, fossilizedPath, at: new Date().toISOString() },
+  });
+
+  log(`Fase 3 concluida. Original preservado em ${path.relative(vaultPath, fossilizedPath)}`);
+  return { success: true, summary, fossilizedPath };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
