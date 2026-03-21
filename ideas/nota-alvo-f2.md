@@ -1,5 +1,9 @@
 ---
-tags: [projeto, teste]
+tags:
+  - projeto
+  - teste
+decay_level: 2
+links_removed_at: '2026-03-21'
 ---
 
 # Nota Alvo F2

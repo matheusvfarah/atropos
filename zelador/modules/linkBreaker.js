@@ -46,9 +46,9 @@ function buildSearchPattern(noteName) {
     throw new TypeError('buildSearchPattern: noteName deve ser uma string não-vazia');
   }
   const e = escapeRegex(noteName);
-  // Grupo 1: heading opcional (#Seção ou ^block-id)
+  // Grupo 1: fragmento opcional — heading (#Seção) OU block ref (^abc123)
   // Grupo 2: alias opcional (|Alias)
-  return new RegExp(`\\[\\[${e}(#[^\\]|]+)?(\\|[^\\]]+)?\\]\\]`, 'g');
+  return new RegExp(`\\[\\[${e}([#^][^\\]|]+)?(\\|[^\\]]+)?\\]\\]`, 'g');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,9 +69,10 @@ function buildReplacePattern(noteName) {
     throw new TypeError('buildReplacePattern: noteName deve ser uma string não-vazia');
   }
   const e = escapeRegex(noteName);
-  // Grupo 1 captura: alias (ex: conteúdo após |)
+  // Fragmento: aceita tanto heading (#Seção) quanto block ref (^abc123)
+  // Grupo 1 captura: alias (conteúdo após |)
   const pattern = new RegExp(
-    `\\[\\[${e}(?:#[^\\]|]+)?(?:\\|([^\\]]+))?\\]\\]`,
+    `\\[\\[${e}(?:[#^][^\\]|]+)?(?:\\|([^\\]]+))?\\]\\]`,
     'g'
   );
   const replacer = (_match, alias) => (alias ? alias.trim() : noteName);
