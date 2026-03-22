@@ -1,187 +1,124 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { glob } = require('glob');
-const matter = require('gray-matter');
-const {
-  PURGATORY_FILE,
-  PURGATORY_WARN_DAYS,
-  PURGATORY_URGENT_DAYS,
-  MS_PER_DAY,
-  IGNORED_DIRS,
-} = require('../config/defaults');
+async function generatePurgatory(vaultPath, config, resolveConfig) {
+  const fs = require('fs');
+  const path = require('path');
+  const { scanVault, getRelativePath } = require('./scanner');
+  const { readFrontmatter } = require('./frontmatter');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Logger interno
-// ─────────────────────────────────────────────────────────────────────────────
-function log(msg) {
-  const t = new Date().toISOString().slice(11, 19);
-  console.log(`[${t}] [purgatory] ${msg}`);
-}
+  const files = await scanVault(vaultPath);
+  const atRisk = [];
 
-/**
-* Formata uma data ISO como YYYY-MM-DD.
-* @param {Date} date
-* @returns {string}
-*/
-function toISODate(date) {
-  return date.toISOString().split('T')[0];
-}
-
-/**
-* Calcula a data de dissolução (Fase 3) de uma nota.
-*
-* @param {Date} mtime - Última modificação
-* @param {number} phase3Days - Threshold de dias para F3
-* @returns {Date}
-*/
-function calcDissolutionDate(mtime, phase3Days) {
-  return new Date(mtime.getTime() + phase3Days* MS_PER_DAY);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// buildPurgatoryList
-// Varre o vault e identifica notas que atingirão a Fase 3 dentro de
-// PURGATORY_WARN_DAYS dias. Retorna lista ordenada por proximidade.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
-* @param {string} vaultPath
-* @param {object} config - Configuração completa { global, folders }
-* @param {function} resolveConfigFn - Função resolveConfig(relativePath, config) do zelador.js
-* @returns {Promise<Array<{filePath, noteName, folder, dissolutionDate, daysRemaining}>>}
-*/
-async function buildPurgatoryList(vaultPath, config, resolveConfigFn) {
-  const now = Date.now();
-  const ignorePatterns = IGNORED_DIRS.map(dir => `**/${dir}/**`);
-
-  const files = await glob('**/*.md', {
-    cwd: vaultPath,
-    absolute: true,
-    ignore: ignorePatterns,
-    dot: false,
-  });
-
-  const candidates = [];
-
-  for (const filePath of files) {
-    // Ignora o próprio PURGATORIO.md
-    if (path.basename(filePath) === PURGATORY_FILE) continue;
-
-    let stat, content;
+  for (const file of files) {
+    let fm;
     try {
-      stat = fs.statSync(filePath);
-      content = fs.readFileSync(filePath, 'utf8');
-    } catch (_) {
+      fm = readFrontmatter(file.filePath).data || {};
+    } catch {
       continue;
     }
 
-    const parsed = matter(content);
-    const data = parsed.data || {};
+    // Ignorar imunes e fossilizados
+    if (fm.decay_immune) continue;
+    if (fm.status === 'fossilized') continue;
+    if ((fm.decay_level || 0) >= 3) continue;
 
-    // Pula imunes
-    if (data.decay_immune === true) continue;
-    // Pula fossilizadas
-    if (data.status === 'fossilized' || data.decay_level === 3) continue;
+    const relativePath = getRelativePath(vaultPath, file.filePath);
+    const effectiveConfig = resolveConfig(relativePath, config);
+    if (effectiveConfig.decay_immune) continue;
 
-    const relativePath = '/' + path.relative(vaultPath, filePath);
-    const effectiveConfig = resolveConfigFn(relativePath, config);
+    // Calcular dias restantes até F3
+    const daysInactive = file.inactivityMs / (1000 * 60 * 60 * 24);
+    const daysUntilF3 = Math.ceil(effectiveConfig.phase3_days - daysInactive);
 
-    // Pasta imune via config
-    if (effectiveConfig.decay_immune === true) continue;
+    // Só incluir se vai fossilizar nos próximos 30 dias
+    if (daysUntilF3 > 30) continue;
+    // Já fossilizou ou passou do threshold — não incluir
+    if (daysUntilF3 < -7) continue;
 
-    const dissolutionDate = calcDissolutionDate(stat.mtime, effectiveConfig.phase3_days);
-    const msRemaining = dissolutionDate.getTime() - now;
-    const daysRemaining = Math.ceil(msRemaining / MS_PER_DAY);
+    const noteName = path.basename(file.filePath, '.md');
+    const folder = '/' + relativePath.split('/').slice(0, -1).join('/');
+    const dissolutionDate = new Date(
+      Date.now() + daysUntilF3 * 24 * 60 * 60 * 1000
+    ).toLocaleDateString('pt-BR');
 
-    // Só lista notas que vão dissolver nos próximos PURGATORY_WARN_DAYS
-    if (daysRemaining <= PURGATORY_WARN_DAYS) {
-      const folder = path.dirname(relativePath) === '/' ? '/' : path.dirname(relativePath);
-      candidates.push({
-        filePath,
-        noteName: path.basename(filePath, '.md'),
-        folder,
-        dissolutionDate,
-        daysRemaining,
-      });
+    atRisk.push({
+      name: noteName,
+      filePath: file.filePath,
+      relativePath,
+      folder: folder || '/',
+      daysUntilF3,
+      dissolutionDate,
+      decayLevel: fm.decay_level || 0,
+    });
+  }
+
+  // Ordenar por urgência (menos dias primeiro)
+  atRisk.sort((a, b) => a.daysUntilF3 - b.daysUntilF3);
+
+  const urgent = atRisk.filter(n => n.daysUntilF3 <= 7);
+  const thisMonth = atRisk.filter(n => n.daysUntilF3 > 7 && n.daysUntilF3 <= 30);
+
+  // Gerar o markdown
+  const now = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  const lines = [
+    '---',
+    'tags: [zelador, sistema]',
+    'decay_immune: true',
+    '---',
+    '',
+    '# Purgatório',
+    '',
+    '> Abrir qualquer nota desta lista reseta o decaimento.',
+    `> Última atualização: ${now}`,
+    '',
+    '---',
+    '',
+  ];
+
+  if (atRisk.length === 0) {
+    lines.push('**Vault saudável — nenhuma nota em risco nos próximos 30 dias.**');
+  } else {
+    if (urgent.length > 0) {
+      lines.push('## Urgente — menos de 7 dias');
+      lines.push('');
+      lines.push('| Nota | Pasta | Dissolução | Restam |');
+      lines.push('|------|-------|------------|--------|');
+      for (const n of urgent) {
+        const restam = n.daysUntilF3 <= 0
+          ? 'hoje'
+          : n.daysUntilF3 === 1
+            ? '1 dia'
+            : `${n.daysUntilF3} dias`;
+        lines.push(`| [[${n.name}]] | ${n.folder} | ${n.dissolutionDate} | ${restam} |`);
+      }
+      lines.push('');
+    }
+
+    if (thisMonth.length > 0) {
+      lines.push('## Este mês');
+      lines.push('');
+      lines.push('| Nota | Pasta | Dissolução | Restam |');
+      lines.push('|------|-------|------------|--------|');
+      for (const n of thisMonth) {
+        lines.push(`| [[${n.name}]] | ${n.folder} | ${n.dissolutionDate} | ${n.daysUntilF3} dias |`);
+      }
+      lines.push('');
     }
   }
 
-  // Ordena por proximidade (mais urgente primeiro)
-  candidates.sort((a, b) => a.daysRemaining - b.daysRemaining);
+  lines.push('---');
+  lines.push('*Gerado automaticamente pelo Zelador · Não edite manualmente*');
 
-  return candidates;
+  const purgPath = path.join(vaultPath, 'PURGATORIO.md');
+  fs.writeFileSync(purgPath, lines.join('\\n'), 'utf-8');
+
+  console.log(`[${new Date().toTimeString().slice(0,8)}] [purgatory] PURGATORIO.md atualizado: ${atRisk.length} nota(s) listada(s) (${urgent.length} urgente(s)).`);
+
+  return { items: atRisk.length, urgent: urgent.length };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// generatePurgatory
-// Gera (ou atualiza) PURGATORIO.md na raiz do vault.
-// O arquivo tem decay_immune: true para nunca ser processado pelo Zelador.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
-* @param {string} vaultPath
-* @param {object} config
-* @param {function} resolveConfigFn
-* @returns {Promise<{ written: boolean, items: number }>}
-*/
-async function generatePurgatory(vaultPath, config, resolveConfigFn) {
-  const candidates = await buildPurgatoryList(vaultPath, config, resolveConfigFn);
-  const purgatoryPath = path.join(vaultPath, PURGATORY_FILE);
-  const now = new Date();
-
-  // Divide em "próximos 7 dias" e "próximos 30 dias"
-  const urgent = candidates.filter(c => c.daysRemaining <= PURGATORY_URGENT_DAYS);
-  const upcoming = candidates.filter(c => c.daysRemaining > PURGATORY_URGENT_DAYS);
-
-  // ── Gera a tabela markdown ──
-  const tableHeader = `| Nota | Pasta | Data de dissolução | Dias restantes |\n|------|-------|-------------------|----------------|`;
-
-  function toRow(item) {
-    return `| [[${item.noteName}]] | ${item.folder} | ${toISODate(item.dissolutionDate)} | ${item.daysRemaining} dia(s) |`;
-  }
-
-  const urgentSection = urgent.length > 0
-    ? `## Próximos ${PURGATORY_URGENT_DAYS} dias\n\n${tableHeader}\n${urgent.map(toRow).join('\n')}`
-    : `## Próximos ${PURGATORY_URGENT_DAYS} dias\n\n*Nenhuma nota urgente.*`;
-
-  const upcomingSection = upcoming.length > 0
-    ? `## � Próximos ${PURGATORY_WARN_DAYS} dias\n\n${tableHeader}\n${upcoming.map(toRow).join('\n')}`
-    : `## � Próximos ${PURGATORY_WARN_DAYS} dias\n\n*Nenhuma nota programada para este período.*`;
-
-  const content = `---
-tags: [zelador, sistema]
-decay_immune: true
----
-
-# Purgatório — Notas condenadas à dissolução
-
->**Atenção:** Estas notas serão comprimidas pelo Zelador nas datas indicadas.
-> Abra qualquer uma delas para resetar o decaimento automaticamente.
-> Última atualização: ${toISODate(now)} ${now.toTimeString().slice(0, 5)}
-
----
-
-${urgentSection}
-
----
-
-${upcomingSection}
-
----
-
-*Gerado automaticamente pelo Zelador. Não edite este arquivo manualmente.*
-`;
-
-  fs.writeFileSync(purgatoryPath, content, 'utf8');
-  log(`PURGATORIO.md atualizado: ${candidates.length} nota(s) listada(s) (${urgent.length} urgente(s)).`);
-
-  return { written: true, items: candidates.length };
-}
-
-module.exports = {
-  generatePurgatory,
-  buildPurgatoryList, // exportada para facilitar testes
-  calcDissolutionDate,
-};
+module.exports = { generatePurgatory };

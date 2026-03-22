@@ -3,7 +3,21 @@
 const fs = require('fs');
 const path = require('path');
 const { glob } = require('glob');
+const { readFrontmatter } = require('./frontmatter');
 const { IGNORED_DIRS, SAFETY_BUFFER_MS } = require('../config/defaults');
+
+function getInactivityMs(filePath, stat) {
+  try {
+    const fm = readFrontmatter(filePath).data;
+    if (fm.decay_since) {
+      const decaySince = new Date(fm.decay_since).getTime();
+      if (!isNaN(decaySince)) {
+        return Date.now() - decaySince;
+      }
+    }
+  } catch (_) {}
+  return Date.now() - stat.mtimeMs;
+}
 
 /**
 * Varre o vault em busca de todos os arquivos.md,
@@ -38,7 +52,7 @@ async function scanVault(vaultPath) {
       continue;
     }
 
-    const inactivityMs = now - stat.mtime.getTime();
+    const inactivityMs = getInactivityMs(filePath, stat);
 
     // Buffer de segurança: ignora arquivos modificados nas últimas 24h
     // Protege contra notas que estão sendo editadas agora
