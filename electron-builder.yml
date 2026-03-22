@@ -1,6 +1,6 @@
-appId: com.grafofluido.zelador
-productName: liquid-graph
-copyright: Copyright © 2026
+appId: com.atropos.app
+productName: Atropos
+copyright: Copyright © 2026 Matheus Farah
 
 directories:
   output: dist/
@@ -13,19 +13,20 @@ files:
   - package.json
   - "!**/.env"
   - "!**/node_modules/.cache"
+  - "!**/zelador/node_modules/.cache"
 
 win:
   target: nsis
-  icon: assets/icon.svg
+  icon: assets/icon.ico
 
 mac:
   target: dmg
-  icon: assets/icon.svg
+  icon: assets/icon.icns
   category: public.app-category.productivity
 
 linux:
   target: AppImage
-  icon: assets/icon.svg
+  icon: assets/icon.png
 
 publish:
   provider: github
