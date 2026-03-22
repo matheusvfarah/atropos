@@ -167,50 +167,17 @@ body { display: flex; flex-direction: column; height: 100vh; }
   margin-top: 20px;
 }
 
-/* ══════════ TITLEBAR ════════════════════════════════════════════════════ */
-.titlebar {
-  height: 32px;
-  background: #0e0e0e;
-  border-bottom: 0.5px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  flex-shrink: 0;
-  -webkit-app-region: drag;
-  user-select: none;
-}
-.titlebar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  -webkit-app-region: drag;
-}
-.titlebar-name { font-size: 12px; color: var(--text-secondary); }
-.titlebar-right {
-  display: flex;
-  gap: 7px;
-  -webkit-app-region: no-drag;
-}
-.wbtn {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-.wbtn:hover   { opacity: 0.75; }
-.wbtn-red    { background: #FF5F57; }
-.wbtn-yellow { background: #FFBD2E; }
-.wbtn-green  { background: #27C93F; }
-
-/* ══════════ APP BODY ════════════════════════════════════════════════════ */
+/* ==========================================================================
+   APP E ESTRUTURA
+   ========================================================================== */
 .app-body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  height: 100vh;
 }
 
-/* ══════════ SIDEBAR ═════════════════════════════════════════════════════ */
+/* ══════════ SIDEBAR (com drag zone para macOS) ══════════════════════════ */
 .sidebar {
   width: 220px;
   background: #161616;
@@ -218,7 +185,93 @@ body { display: flex; flex-direction: column; height: 100vh; }
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  padding-top: 8px; /* Padrão para Win/Linux */
 }
+
+/* No macOS, a sidebar não tem padding, pois a zona de drag toma esse espaço */
+body.platform-darwin .sidebar {
+  padding-top: 0;
+}
+
+/* Área onde o mouse pode arrastar a janela no macOS */
+.sidebar-drag-zone { display: none; }
+body.platform-darwin .sidebar-drag-zone {
+  display: flex;
+  height: 48px;
+  width: 100%;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+/* Buraco não-arrastável no tamanho exato para os botões nativos (traffic lights) poderem receber o clique */
+body.platform-darwin .sidebar-drag-zone::before {
+  content: '';
+  width: 80px;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+/* Botões interativos ficam no-drag garantido */
+.sidebar button,
+.sidebar a,
+.sidebar input,
+.nav-item,
+.status-area {
+  -webkit-app-region: no-drag;
+}
+
+/* Área de conteúdo principal não-arrastável */
+.main-content,
+.screen,
+#graph-container {
+  -webkit-app-region: no-drag;
+}
+
+#custom-titlebar {
+  display: none; /* escondido por padrão no mac */
+  height: 32px;
+  background: #161616;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  -webkit-app-region: drag;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 12px;
+}
+
+/* Mostrar somente em Windows/Linux */
+body.platform-win32 #custom-titlebar,
+body.platform-linux #custom-titlebar {
+  display: flex;
+}
+
+#app-title {
+  font-size: 12px;
+  color: #5C5A56;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+  -webkit-app-region: drag;
+}
+
+#window-controls {
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+#window-controls button {
+  width: 46px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #5C5A56;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+#window-controls button:hover { background: rgba(255,255,255,0.06); }
+#btn-close:hover { background: #993C1D !important; color: #fff; }
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -461,7 +514,7 @@ body { display: flex; flex-direction: column; height: 100vh; }
 .fossil-summary {
   font-size: 12px; color: var(--text-tertiary); font-style: italic;
   margin-bottom: 10px; line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .fossil-actions {
   display: flex; justify-content: space-between; align-items: center;

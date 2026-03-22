@@ -11,14 +11,14 @@ let animFrame  = null;
 let canvas     = null;
 
 const PHASE = {
-  alive:  { color: '#1D9E75', glow: '#1D9E75', alpha: 1.0,  size: 1.0,  edgeAlpha: 0.18 },
-  f1:     { color: '#888780', glow: null,       alpha: 0.55, size: 0.80, edgeAlpha: 0.06 },
-  f2:     { color: '#BA7517', glow: '#BA7517',  alpha: 0.65, size: 0.70, edgeAlpha: 0    },
-  f3:     { color: '#993C1D', glow: '#993C1D',  alpha: 0.45, size: 0.55, edgeAlpha: 0    },
-  fossil: { color: '#3a3836', glow: null,       alpha: 0.28, size: 0.40, edgeAlpha: 0    },
+  alive:  { color: '#1D9E75', glow: '#1D9E75', alpha: 1.0,  size: 1.0,  edgeAlpha: 0.65 },
+  f1:     { color: '#888780', glow: '#888780',  alpha: 0.75, size: 0.85, edgeAlpha: 0.35 },
+  f2:     { color: '#BA7517', glow: '#BA7517',  alpha: 0.85, size: 0.75, edgeAlpha: 0.20 },
+  f3:     { color: '#993C1D', glow: '#993C1D',  alpha: 0.65, size: 0.60, edgeAlpha: 0    },
+  fossil: { color: '#5a5855', glow: null,       alpha: 0.40, size: 0.45, edgeAlpha: 0    },
 };
 
-const BASE_R = 6;
+const BASE_R = 11;
 
 async function initGraph() {
   const container = document.getElementById('graph-container');
@@ -44,7 +44,7 @@ async function initGraph() {
         <line x1="44.5" y1="38" x2="37.8" y2="34.1" stroke="#1D9E75"
               stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
       </svg>
-      <span>mapeando vault...</span>
+      <span>${window.i18n ? window.i18n.t('dash.loadingVault') : 'mapeando vault...'}</span>
     </div>
     <style>
       @keyframes spin { to { transform: rotate(360deg); } }
@@ -56,7 +56,7 @@ async function initGraph() {
     data = await window.zelador.getGraphData();
   } catch (e) {
     container.innerHTML = `<div style="color:#993C1D;padding:2rem;font-size:13px;">
-      Erro ao carregar grafo: ${e.message}
+      ${window.i18n ? window.i18n.t('graph.error') : 'Erro ao carregar grafo'}: ${e.message}
     </div>`;
     return;
   }
@@ -66,7 +66,7 @@ async function initGraph() {
       display:flex;flex-direction:column;align-items:center;
       justify-content:center;height:100%;gap:8px;
       color:#5C5A56;font-size:13px;font-style:italic;
-    ">Nenhuma nota encontrada no vault.</div>`;
+    ">${window.i18n ? window.i18n.t('graph.empty') : 'Nenhuma nota encontrada no vault.'}</div>`;
     return;
   }
 
@@ -122,12 +122,13 @@ async function initGraph() {
     font-size:10px;letter-spacing:0.04em;
     pointer-events:none;
   `;
+  const t = window.i18n ? window.i18n.t : k => k;
   const phaseDefs = [
-    { key:'alive', label:'VIVA' },
-    { key:'f1',    label:'F1 ESTIAGEM' },
-    { key:'f2',    label:'F2 DESCONEXAO' },
-    { key:'f3',    label:'F3 DISSOLUCAO' },
-    { key:'fossil',label:'FOSSIL' },
+    { key:'alive', label:t('phase.alive') },
+    { key:'f1',    label:t('phase.f1') },
+    { key:'f2',    label:t('phase.f2') },
+    { key:'f3',    label:t('phase.f3') },
+    { key:'fossil',label:t('phase.fossil') },
   ];
   for (const p of phaseDefs) {
     const cfg = PHASE[p.key];
@@ -196,11 +197,14 @@ async function initGraph() {
       .strength(0.3))
     .force('charge', d3.forceManyBody()
       .strength(d => {
-        if (d.phase === 'f2' || d.phase === 'f3' || d.phase === 'fossil') return -80;
-        return -120;
+        if (d.phase === 'fossil') return -180;
+        if (d.phase === 'f3')     return -220;
+        if (d.phase === 'f2')     return -250;
+        if (d.phase === 'f1')     return -280;
+        return -350;
       }))
     .force('center', d3.forceCenter(getW()/2, getH()/2).strength(0.08))
-    .force('collision', d3.forceCollide(d => d.r + 4))
+    .force('collision', d3.forceCollide(d => d.r + 10))
     .alphaDecay(0.015)
     .velocityDecay(0.4);
 
@@ -280,8 +284,8 @@ async function initGraph() {
 
     if (hit) {
       const phaseName = {
-        alive:'Ativa', f1:'F1 — Estiagem', f2:'F2 — Desconexão',
-        f3:'F3 — Dissolução', fossil:'Fossilizada'
+        alive: t('phase.alive.full'), f1: t('phase.f1.full'), f2: t('phase.f2.full'),
+        f3: t('phase.f3.full'), fossil: t('phase.fossil.full')
       }[hit.phase] || hit.phase;
 
       tooltip.innerHTML = `
@@ -290,7 +294,7 @@ async function initGraph() {
           ${hit.name}
         </div>
         <div style="color:#5C5A56;font-size:10px;">${phaseName}</div>
-        ${hit.immune ? '<div style="color:#534AB7;font-size:10px;margin-top:2px;">immune</div>' : ''}
+        ${hit.immune ? `<div style="color:#534AB7;font-size:10px;margin-top:2px;">${t('graph.immune')}</div>` : ''}
         <div style="color:#3a3836;font-size:10px;margin-top:4px;
                     font-family:monospace;word-break:break-all;">
           ${hit.id.length > 40 ? '...' + hit.id.slice(-38) : hit.id}
@@ -371,13 +375,30 @@ async function initGraph() {
       const isHovered = hoveredNode &&
         (e.source === hoveredNode || e.target === hoveredNode);
 
+      // Linha de glow por baixo — mais grossa e suave
       ctx.beginPath();
       ctx.moveTo(e.source.x, e.source.y);
       ctx.lineTo(e.target.x, e.target.y);
       ctx.strokeStyle = isHovered
-        ? `rgba(29,158,117,${Math.min(1, alpha * 4)})`
-        : `rgba(29,158,117,${alpha})`;
-      ctx.lineWidth = isHovered ? 1.2 / transform.k : 0.6 / transform.k;
+        ? `rgba(29,158,117,${alpha * 0.5})`
+        : `rgba(29,158,117,${alpha * 0.25})`;
+      ctx.lineWidth = isHovered
+        ? 6 / transform.k
+        : 3.5 / transform.k;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Linha principal — fina e brilhante por cima
+      ctx.beginPath();
+      ctx.moveTo(e.source.x, e.source.y);
+      ctx.lineTo(e.target.x, e.target.y);
+      ctx.strokeStyle = isHovered
+        ? `rgba(93,202,165,${alpha * 1.2})`
+        : `rgba(93,202,165,${alpha * 0.85})`;
+      ctx.lineWidth = isHovered
+        ? 1.8 / transform.k
+        : 1.2 / transform.k;
+      ctx.lineCap = 'round';
       ctx.stroke();
     }
 
@@ -391,17 +412,40 @@ async function initGraph() {
       const r = n.r * pulse;
       const isHov = hoveredNode === n;
 
-      // Halo para nós vivos e F2
-      if (cfg.glow && (n.phase === 'alive' || n.phase === 'f2')) {
-        const haloR = r * (2.5 + Math.sin(n.pulse) * 0.5);
-        const g = ctx.createRadialGradient(n.x,n.y,r*0.5, n.x,n.y,haloR);
-        g.addColorStop(0, cfg.glow + (n.phase === 'alive' ? '22' : '18'));
-        g.addColorStop(1, cfg.glow + '00');
-        ctx.globalAlpha = cfg.alpha * 0.6;
-        ctx.fillStyle = g;
+      // Halo externo — camada mais suave e larga
+      if (cfg.glow) {
+        const haloOuter = r * (3.5 + Math.sin(n.pulse) * 0.6);
+        const go = ctx.createRadialGradient(n.x,n.y,r*0.5, n.x,n.y,haloOuter);
+        go.addColorStop(0, cfg.glow + (n.phase === 'alive' ? '30' : '20'));
+        go.addColorStop(1, cfg.glow + '00');
+        ctx.globalAlpha = cfg.alpha * 0.5;
+        ctx.fillStyle = go;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, haloR, 0, Math.PI*2);
+        ctx.arc(n.x, n.y, haloOuter, 0, Math.PI*2);
         ctx.fill();
+      }
+
+      // Halo interno — mais concentrado e brilhante
+      if (cfg.glow) {
+        const haloInner = r * (1.8 + Math.sin(n.pulse) * 0.3);
+        const gi = ctx.createRadialGradient(n.x,n.y,r*0.3, n.x,n.y,haloInner);
+        gi.addColorStop(0, cfg.glow + (n.phase === 'alive' ? '55' : '40'));
+        gi.addColorStop(1, cfg.glow + '00');
+        ctx.globalAlpha = cfg.alpha * 0.8;
+        ctx.fillStyle = gi;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, haloInner, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // Anel de borda brilhante
+      if (n.phase === 'alive' || n.phase === 'f2') {
+        ctx.globalAlpha = cfg.alpha * 0.6;
+        ctx.strokeStyle = cfg.color + 'AA';
+        ctx.lineWidth = 1.2 / transform.k;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 1.5/transform.k, 0, Math.PI*2);
+        ctx.stroke();
       }
 
       // Anel de hover
@@ -414,9 +458,17 @@ async function initGraph() {
         ctx.stroke();
       }
 
-      // Nó principal
-      ctx.globalAlpha = Math.min(1, cfg.alpha * (isHov ? 1.2 : 1));
-      ctx.fillStyle = cfg.color;
+      // Gradiente interno — centro mais claro, borda mais escura
+      const nodeGrad = ctx.createRadialGradient(
+        n.x - r*0.25, n.y - r*0.25, r*0.05,
+        n.x, n.y, r
+      );
+      nodeGrad.addColorStop(0, cfg.color + 'FF');
+      nodeGrad.addColorStop(0.5, cfg.color + 'EE');
+      nodeGrad.addColorStop(1, cfg.color + '88');
+
+      ctx.globalAlpha = cfg.alpha * (isHov ? 1.2 : 1);
+      ctx.fillStyle = nodeGrad;
       ctx.beginPath();
       ctx.arc(n.x, n.y, r, 0, Math.PI*2);
       ctx.fill();
@@ -439,12 +491,13 @@ async function initGraph() {
     const aliveN  = nodes.filter(n => n.phase === 'alive').length;
     const decayN  = nodes.filter(n => ['f1','f2','f3'].includes(n.phase)).length;
     const fossilN = nodes.filter(n => n.phase === 'fossil').length;
+    const tStats = (window.i18n ? window.i18n.t('graph.stats') : 'notas &nbsp;&middot;&nbsp; conexões &nbsp;&middot;&nbsp; vivas &nbsp;&middot;&nbsp; decaindo &nbsp;&middot;&nbsp; fósseis').split('&nbsp;&middot;&nbsp;');
     stats.innerHTML = `
-      ${nodes.length} notas &nbsp;&middot;&nbsp;
-      ${edges.length} conexões &nbsp;&middot;&nbsp;
-      ${aliveN} vivas &nbsp;&middot;&nbsp;
-      ${decayN} decaindo &nbsp;&middot;&nbsp;
-      ${fossilN} fósseis
+      ${nodes.length} ${tStats[0].trim()} &nbsp;&middot;&nbsp;
+      ${edges.length} ${tStats[1].trim()} &nbsp;&middot;&nbsp;
+      ${aliveN} ${tStats[2].trim()} &nbsp;&middot;&nbsp;
+      ${decayN} ${tStats[3].trim()} &nbsp;&middot;&nbsp;
+      ${fossilN} ${tStats[4].trim()}
     `;
 
     ctx.restore();

@@ -41,57 +41,57 @@
           </svg>
         </div>
         <h1 data-i18n="ob.welcome">Bem-vindo ao liquid-graph</h1>
-        <p class="ob-desc">Selecione a pasta do seu vault do Obsidian para começar.</p>
+        <p class="ob-desc" data-i18n="ob.vaultDesc">Selecione a pasta do seu vault do Obsidian para começar.</p>
 
         <div class="vault-picker">
-          <div class="vault-path-display" id="ob-vault-display">Nenhuma pasta selecionada</div>
-          <button class="btn-primary" id="ob-btn-pick">Selecionar pasta</button>
+          <div class="vault-path-display" id="ob-vault-display" data-i18n="ob.noneSelected">Nenhuma pasta selecionada</div>
+          <button class="btn-primary" id="ob-btn-pick" data-i18n="ob.selectBtn">Selecionar pasta</button>
         </div>
         <!-- Campo manual para colar o caminho -->
         <div class="vault-manual">
-          <span class="ob-or">ou cole o caminho manualmente</span>
+          <span class="ob-or" data-i18n="ob.orPaste">ou cole o caminho manualmente</span>
           <input type="text" id="ob-vault-manual" placeholder="/Users/você/Documents/vault" autocomplete="off" />
         </div>
 
         <div class="ob-nav">
           <span></span>
-          <button class="btn-text" id="ob-next-1" disabled>Continuar →</button>
+          <button class="btn-text" id="ob-next-1" disabled data-i18n="ob.continue">Continuar →</button>
         </div>
       </div>
 
       <!-- Passo 2 -->
       <div class="onboarding-step" id="ob-step-2">
-        <h2>Escolha o provider de IA</h2>
-        <p class="ob-desc">Usado na Fase 3 para comprimir notas. Você usará sua própria chave (BYOK).</p>
+        <h2 data-i18n="ob.providerH">Escolha o provider de IA</h2>
+        <p class="ob-desc" data-i18n="ob.providerDesc">Usado na Fase 3 para comprimir notas. Você usará sua própria chave (BYOK).</p>
 
         <div class="provider-grid">
           <div class="provider-card selected" id="ob-card-anthropic" data-provider="anthropic">
             <div class="provider-name">Anthropic Claude</div>
             <div class="provider-model">claude-haiku-4-5 · ~$0.001/nota</div>
-            <span class="provider-tag recommended">Recomendado</span>
+            <span class="provider-tag recommended" data-i18n="ob.recommended">Recomendado</span>
           </div>
           <div class="provider-card" id="ob-card-google" data-provider="google">
             <div class="provider-name">Google Gemini</div>
             <div class="provider-model">gemini-1.5-flash</div>
-            <span class="provider-tag free">Gratuito até cota</span>
+            <span class="provider-tag free" data-i18n="ob.freeUntilQuota">Gratuito até cota</span>
           </div>
         </div>
 
         <div class="ob-nav">
-          <button class="btn-text" id="ob-back-2">← Voltar</button>
-          <button class="btn-primary" id="ob-next-2">Próximo →</button>
+          <button class="btn-text" id="ob-back-2" data-i18n="ob.back">← Voltar</button>
+          <button class="btn-primary" id="ob-next-2" data-i18n="ob.next">Próximo →</button>
         </div>
       </div>
 
       <!-- Passo 3 -->
       <div class="onboarding-step" id="ob-step-3">
-        <h2>Insira sua API key</h2>
+        <h2 data-i18n="ob.apiKeyH">Insira sua API key</h2>
         <p class="ob-desc" id="ob-key-hint">Obtenha em console.anthropic.com</p>
 
-        <label class="field-label">Sua API key</label>
+        <label class="field-label" data-i18n="ob.apiKeyLabel">Sua API key</label>
         <div class="input-with-action">
           <input type="password" id="ob-api-key" placeholder="sk-ant-..." autocomplete="off" />
-          <button id="ob-toggle-key">mostrar</button>
+          <button id="ob-toggle-key" data-i18n="ob.show">mostrar</button>
         </div>
         <p class="key-hint" data-i18n="ob.keyHint">A chave é armazenada no keychain do sistema. O liquid-graph nunca a envia a servidores
           próprios.</p>
@@ -99,8 +99,8 @@
         <div id="ob-feedback" class="ob-feedback"></div>
 
         <div class="ob-nav">
-          <button class="btn-text" id="ob-back-3">← Voltar</button>
-          <button class="btn-primary" id="ob-validate">Validar e entrar</button>
+          <button class="btn-text" id="ob-back-3" data-i18n="ob.back">← Voltar</button>
+          <button class="btn-primary" id="ob-validate" data-i18n="ob.validate">Validar e entrar</button>
         </div>
       </div>
 
@@ -111,33 +111,36 @@
   <!-- ══════════════════ APP ═════════════════════════════════════════════════ -->
   <div id="screen-app" class="screen hidden">
 
-    <!-- Titlebar personalizada (draggable) -->
-    <header class="titlebar" id="titlebar">
-      <div class="titlebar-left">
-        <svg viewBox="0 0 52 52" fill="none" width="18" height="18">
-          <circle cx="26" cy="26" r="7" fill="#1D9E75" />
-          <circle cx="26" cy="26" r="14" fill="none" stroke="#1D9E75" stroke-width="1.5" opacity="0.4" />
-          <line x1="26" y1="4" x2="26" y2="12" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"
-            opacity="0.70" />
-          <line x1="44.5" y1="14" x2="37.8" y2="17.9" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"
-            opacity="0.55" />
-          <line x1="44.5" y1="38" x2="37.8" y2="34.1" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"
-            opacity="0.40" />
-        </svg>
-        <span class="titlebar-name">liquid-graph</span>
+    <!-- Só visível em Windows/Linux — escondido no macOS via CSS -->
+    <div id="custom-titlebar">
+      <span id="app-title">liquid-graph</span>
+      <div id="window-controls">
+        <button id="btn-minimize" onclick="window.zelador.minimizeWindow()">
+          <svg width="10" height="1" viewBox="0 0 10 1">
+            <line x1="0" y1="0.5" x2="10" y2="0.5" stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </button>
+        <button id="btn-maximize" onclick="window.zelador.maximizeWindow()">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <rect x="0.5" y="0.5" width="9" height="9" fill="none"
+                  stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </button>
+        <button id="btn-close" onclick="window.zelador.closeWindow()">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
       </div>
-      <div class="titlebar-right">
-        <div class="wbtn wbtn-green" id="wbtn-min" title="Minimizar"></div>
-        <div class="wbtn wbtn-yellow" title="Minimizar para tray"></div>
-        <div class="wbtn wbtn-red" id="wbtn-close" title="Fechar para tray"></div>
-      </div>
-    </header>
+    </div>
 
     <!-- Corpo do app: sidebar + conteúdo -->
     <div class="app-body">
 
       <!-- Sidebar -->
       <aside class="sidebar">
+        <div class="sidebar-drag-zone"></div>
         <nav class="sidebar-nav">
           <a class="nav-item active" data-view="dashboard" id="nav-dashboard">
             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -199,7 +202,7 @@
           <div class="screen-header">
             <div>
               <h1 class="text-title-lg" data-i18n="nav.dashboard">Dashboard</h1>
-              <p class="text-caption" id="dash-subtitle">carregando vault...</p>
+              <p class="text-caption" id="dash-subtitle" data-i18n="dash.loadingVault">carregando vault...</p>
             </div>
             <button class="btn-run" id="btn-run-now">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -265,7 +268,7 @@
 
           <div class="urgent-banner hidden" id="urgent-banner">
             <span>▲</span>
-            <span id="urgent-text">notas urgentes</span>
+            <span id="urgent-text" data-i18n="purg.urgentNotes">notas urgentes</span>
           </div>
 
           <table class="purgatory-table">
@@ -292,7 +295,7 @@
             <h1 class="text-title-lg" data-i18n="fossil.title">Fossilizadas</h1>
           </div>
           <p class="text-body" style="margin-bottom:20px"><span data-i18n="fossil.desc">Notas comprimidas por IA e
-              arquivadas em</span> <code class="inline-code">/_fossilized/</code>. Somente leitura.</p>
+              arquivadas em</span> <code class="inline-code">/_fossilized/</code><span data-i18n="fossil.desc2">. Somente leitura.</span></p>
           <div class="fossil-list" id="fossilized-list">
             <div class="activity-empty" data-i18n="fossil.empty">Nenhuma nota fossilizada ainda.</div>
           </div>
@@ -311,29 +314,29 @@
         <!-- ─── CONFIGURAÇÕES ─────────────────────────────────────────────── -->
         <section class="view" id="view-config">
           <div class="screen-header">
-            <h1 class="text-title-lg">Configurações</h1>
+            <h1 class="text-title-lg" data-i18n="cfg.title">Configurações</h1>
           </div>
 
           <div class="settings-screen">
 
             <!-- Vault -->
             <section class="settings-section">
-              <h2 class="settings-section-title">Vault</h2>
+              <h2 class="settings-section-title" data-i18n="cfg.vault">Vault</h2>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Pasta do vault</label>
-                  <p>Caminho para o diretório raiz do seu Obsidian.</p>
+                  <label data-i18n="cfg.vaultPath">Pasta do vault</label>
+                  <p data-i18n="cfg.vaultPathDesc">Caminho para o diretório raiz do seu Obsidian.</p>
                 </div>
                 <div class="settings-row-control">
                   <div class="path-display" id="cfg-vault-display">não configurado</div>
-                  <button class="btn-secondary" id="cfg-btn-pick">Alterar</button>
+                  <button class="btn-secondary" id="cfg-btn-pick" data-i18n="cfg.change">Alterar</button>
                 </div>
               </div>
               <!-- Campo manual visível por padrão permitindo colar -->
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Ou cole o caminho</label>
-                  <p>Você pode colar o caminho diretamente aqui.</p>
+                  <label data-i18n="cfg.vaultPaste">Ou cole o caminho</label>
+                  <p data-i18n="cfg.vaultPasteDesc">Você pode colar o caminho diretamente aqui.</p>
                 </div>
                 <div class="settings-row-control" style="flex:1;max-width:320px">
                   <input type="text" id="cfg-vault-manual" placeholder="/Users/você/Documents/vault"
@@ -344,11 +347,11 @@
 
             <!-- Agendamento -->
             <section class="settings-section">
-              <h2 class="settings-section-title">Agendamento</h2>
+              <h2 class="settings-section-title" data-i18n="cfg.schedule">Agendamento</h2>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Horário de execução</label>
-                  <p>O Zelador roda automaticamente neste horário todos os dias.</p>
+                  <label data-i18n="cfg.scheduleTime">Horário de execução</label>
+                  <p data-i18n="cfg.scheduleDesc">O Zelador roda automaticamente neste horário todos os dias.</p>
                 </div>
                 <div class="settings-row-control time-picker">
                   <select id="cfg-hour"></select>
@@ -360,11 +363,11 @@
 
             <!-- API de IA -->
             <section class="settings-section">
-              <h2 class="settings-section-title">API de inteligência artificial</h2>
+              <h2 class="settings-section-title" data-i18n="cfg.api">API de inteligência artificial</h2>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Provider ativo</label>
-                  <p>Usado na Fase 3 para comprimir notas fossilizadas.</p>
+                  <label data-i18n="cfg.provider">Provider ativo</label>
+                  <p data-i18n="cfg.providerDesc">Usado na Fase 3 para comprimir notas fossilizadas.</p>
                 </div>
                 <div class="settings-row-control">
                   <span class="provider-badge" id="cfg-active-provider">—</span>
@@ -376,31 +379,31 @@
               </div>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Chave de API</label>
-                  <p>Armazenada no keychain do sistema. Nunca enviada a servidores externos.</p>
+                  <label data-i18n="cfg.apiKey">Chave de API</label>
+                  <p data-i18n="cfg.apiKeyDesc">Armazenada no keychain do sistema. Nunca enviada a servidores externos.</p>
                 </div>
                 <div class="settings-row-control">
                   <span class="key-status" id="cfg-key-status">verificando...</span>
-                  <button class="btn-secondary" id="cfg-btn-change-key">Trocar</button>
-                  <button class="btn-danger" id="cfg-btn-revoke-key">Revogar</button>
+                  <button class="btn-secondary" id="cfg-btn-change-key" data-i18n="cfg.change">Trocar</button>
+                  <button class="btn-danger" id="cfg-btn-revoke-key" data-i18n="cfg.revoke">Revogar</button>
                 </div>
               </div>
               <!-- Inline key change form -->
               <div class="key-change-form hidden" id="cfg-key-form">
-                <label class="field-label" id="cfg-key-form-label">Nova chave Anthropic</label>
+                <label class="field-label" id="cfg-key-form-label" data-i18n="cfg.newKey">Nova chave Anthropic</label>
                 <div class="input-with-action" style="max-width:420px">
                   <input type="password" id="cfg-new-key" placeholder="sk-ant-..." autocomplete="off" />
-                  <button id="cfg-toggle-key">mostrar</button>
+                  <button id="cfg-toggle-key" data-i18n="ob.show">mostrar</button>
                 </div>
                 <div style="display:flex;gap:8px;margin-top:10px">
-                  <button class="btn-primary" id="cfg-save-key">Salvar chave</button>
-                  <button class="btn-secondary" id="cfg-cancel-key">Cancelar</button>
+                  <button class="btn-primary" id="cfg-save-key" data-i18n="cfg.saveKey">Salvar chave</button>
+                  <button class="btn-secondary" id="cfg-cancel-key" data-i18n="cfg.cancelKey">Cancelar</button>
                 </div>
               </div>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Custo estimado este mês</label>
-                  <p>Baseado nas dissoluções executadas até hoje.</p>
+                  <label data-i18n="cfg.monthlyCost">Custo estimado este mês</label>
+                  <p data-i18n="cfg.monthlyCostDesc">Baseado nas dissoluções executadas até hoje.</p>
                 </div>
                 <div class="settings-row-control">
                   <span class="text-mono" id="cfg-monthly-cost">0 dissoluções · $0.000</span>
@@ -414,7 +417,7 @@
               <div class="settings-row">
                 <div class="settings-row-info">
                   <label data-i18n="cfg.languageLabel">Idioma da interface</label>
-                  <p>Sem reiniciar o app.</p>
+                  <p data-i18n="cfg.languageDesc">Sem reiniciar o app.</p>
                 </div>
                 <div class="settings-row-control">
                   <select id="cfg-language">
@@ -427,11 +430,11 @@
 
             <!-- Notificações -->
             <section class="settings-section">
-              <h2 class="settings-section-title">Notificações</h2>
+              <h2 class="settings-section-title" data-i18n="cfg.notifications">Notificações</h2>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Notificar ao executar</label>
-                  <p>Exibe uma notificação nativa quando o Zelador finalizar.</p>
+                  <label data-i18n="cfg.notifyRun">Notificar ao executar</label>
+                  <p data-i18n="cfg.notifyDesc">Exibe uma notificação nativa quando o Zelador finalizar.</p>
                 </div>
                 <div class="settings-row-control">
                   <label class="toggle-switch">
@@ -444,27 +447,50 @@
               </div>
             </section>
 
+            <!-- Configuração de Sync -->
+            <section class="settings-section">
+              <h2 class="settings-section-title" data-i18n="cfg.syncTitle">Sincronização (Dispositivos)</h2>
+              <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+                <p data-i18n="cfg.syncDesc" style="color:#5C5A56;font-size:13px;line-height:1.5;margin:0;">Para ativar o sync entre dispositivos:</p>
+                <ol style="color:#5C5A56;font-size:13px;line-height:1.5;margin:0;padding-left:16px;">
+                  <li data-i18n="cfg.syncStep1">Criar um repositório <strong>PRIVADO</strong> no GitHub para o vault</li>
+                  <li data-i18n="cfg.syncStep2">No terminal, dentro do vault:</li>
+                </ol>
+                <pre style="background:#1C1A17;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#1D9E75;margin:0;width:100%;box-sizing:border-box;">git init
+git remote add origin https://github.com/usuario/meu-vault.git
+git add -A && git commit -m "initial vault"
+git push -u origin main</pre>
+                <ol start="3" style="color:#5C5A56;font-size:13px;line-height:1.5;margin:0;padding-left:16px;">
+                  <li data-i18n="cfg.syncStep3">No segundo dispositivo, clonar o repositório como vault</li>
+                  <li data-i18n="cfg.syncStep4">O Grafo Líquido detecta o remote automaticamente</li>
+                </ol>
+                <div style="background:#BA751722;border:1px solid #BA751766;color:#BA7517;padding:10px;border-radius:6px;font-size:12px;line-height:1.4;margin-top:4px;" data-i18n="cfg.syncWarning">
+                  <strong>Repositório PRIVADO é fortemente recomendado</strong> — o vault contém notas pessoais e o conteúdo será enviado para o GitHub.
+                </div>
+              </div>
+            </section>
+
             <!-- Zona de risco -->
             <section class="settings-section">
-              <h2 class="settings-section-title" style="color:var(--color-dissolucao)">Zona de risco</h2>
+              <h2 class="settings-section-title" style="color:var(--color-dissolucao)" data-i18n="cfg.dangerZone">Zona de risco</h2>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Exportar todos os logs</label>
-                  <p>Baixar o histórico completo de execuções em JSON.</p>
+                  <label data-i18n="cfg.exportLogs">Exportar todos os logs</label>
+                  <p data-i18n="cfg.exportDesc">Baixar o histórico completo de execuções em JSON.</p>
                 </div>
-                <button class="btn-secondary" id="cfg-btn-export">Exportar</button>
+                <button class="btn-secondary" id="cfg-btn-export" data-i18n="cfg.export">Exportar</button>
               </div>
               <div class="settings-row">
                 <div class="settings-row-info">
-                  <label>Resetar todas as configurações</label>
-                  <p>Apaga vault path, chaves e agenda. Não afeta os arquivos do vault.</p>
+                  <label data-i18n="cfg.resetAll">Resetar todas as configurações</label>
+                  <p data-i18n="cfg.resetDesc">Apaga vault path, chaves e agenda. Não afeta os arquivos do vault.</p>
                 </div>
-                <button class="btn-danger" id="cfg-btn-reset">Resetar</button>
+                <button class="btn-danger" id="cfg-btn-reset" data-i18n="cfg.reset">Resetar</button>
               </div>
             </section>
 
             <div class="settings-save-row">
-              <button class="btn-primary" id="btn-save-config">Salvar configurações</button>
+              <button class="btn-primary" id="btn-save-config" data-i18n="cfg.save">Salvar configurações</button>
               <span class="save-feedback" id="save-feedback"></span>
             </div>
 
@@ -477,7 +503,7 @@
     <!-- Statusbar -->
     <footer class="statusbar">
       <span class="statusbar-vault text-mono" id="statusbar-vault">—</span>
-      <span class="statusbar-run text-mono" id="statusbar-run">aguardando primeira execução</span>
+      <span class="statusbar-run text-mono" id="statusbar-run" data-i18n="statusbar.waiting">aguardando primeira execução</span>
     </footer>
 
   </div><!-- /screen-app -->

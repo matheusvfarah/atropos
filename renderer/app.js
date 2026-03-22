@@ -84,7 +84,7 @@ $('ob-btn-pick').addEventListener('click', async () => {
 $('ob-vault-manual').addEventListener('input', (e) => {
   const val = e.target.value.trim();
   obVault = val;
-  $('ob-vault-display').textContent = val || 'Nenhuma pasta selecionada';
+  $('ob-vault-display').textContent = val || window.i18n.t('ob.noneSelected');
   $('ob-next-1').disabled = val.length === 0;
 });
 
@@ -113,7 +113,7 @@ $('ob-toggle-key').addEventListener('click', () => {
   const inp = $('ob-api-key');
   const isPassword = inp.type === 'password';
   inp.type = isPassword ? 'text' : 'password';
-  $('ob-toggle-key').textContent = isPassword ? 'esconder' : 'mostrar';
+  $('ob-toggle-key').textContent = isPassword ? window.i18n.t('ob.hide') : window.i18n.t('ob.show');
 });
 
 $('ob-back-3').addEventListener('click', () => showObStep(2));
@@ -122,7 +122,7 @@ $('ob-validate').addEventListener('click', async () => {
   const fb = $('ob-feedback');
   const key = $('ob-api-key').value.trim();
   if (!key) { fb.textContent = 'Insira uma chave.'; fb.className = 'ob-feedback error'; return; }
-  fb.textContent = 'Validando chave via API...'; fb.className = 'ob-feedback loading';
+  fb.textContent = window.i18n.t('ob.validating'); fb.className = 'ob-feedback loading';
   try {
     const val = await api.validateApiKey(obProvider, key);
     if (!val.valid) {
@@ -130,10 +130,10 @@ $('ob-validate').addEventListener('click', async () => {
       return;
     }
 
-    fb.textContent = 'Salvando no keychain...';
+    fb.textContent = window.i18n.t('ob.saving');
     await api.setApiKey(obProvider, key);
     await api.setConfig({ vaultPath: obVault, provider: obProvider, onboarded: true });
-    fb.textContent = '✓ Configuração concluída!'; fb.className = 'ob-feedback ok';
+    fb.textContent = '✓ ' + window.i18n.t('ob.success'); fb.className = 'ob-feedback ok';
     setTimeout(async () => {
       showScreen('app');
       await initApp();
@@ -166,9 +166,10 @@ function updateStatusUI({ status, lastRunAt, nextRunAt }) {
   const next  = $('status-next');
 
   dot.className = `status-dot ${status}`;
-  const labels = { idle: 'Zelador inativo', running: 'Zelador rodando...', error: 'Erro na execução' };
+  const t = window.i18n.t;
+  const labels = { idle: t('status.idle'), running: t('status.running'), error: t('status.error') };
   label.textContent = labels[status] || status;
-  next.textContent  = nextRunAt ? `Próxima: ${nextRunAt}` : '';
+  next.textContent  = nextRunAt ? `${t('status.next')}${nextRunAt}` : '';
 
   // Statusbar
   const runEl = $('statusbar-run');
@@ -177,7 +178,7 @@ function updateStatusUI({ status, lastRunAt, nextRunAt }) {
       const d = new Date(lastRunAt);
       runEl.textContent = `última execução: ${d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}`;
     } else {
-      runEl.textContent = 'aguardando primeira execução';
+      runEl.textContent = t('statusbar.waiting');
     }
   }
 
@@ -186,8 +187,8 @@ function updateStatusUI({ status, lastRunAt, nextRunAt }) {
   if (btn) {
     btn.disabled = status === 'running';
     btn.innerHTML = status === 'running'
-      ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="2" y="2" width="8" height="8" rx="1"/></svg> Executando...'
-      : '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l9 4.5-9 4.5z"/></svg> Executar agora';
+      ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="2" y="2" width="8" height="8" rx="1"/></svg> ${t('dash.running')}`
+      : `<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l9 4.5-9 4.5z"/></svg> ${t('dash.runNow')}`;
   }
 }
 
@@ -257,7 +258,7 @@ async function loadRecentActivity() {
     const logs = await api.getLogs?.() ?? [];
     const el = $('activityList');
     if (!logs?.length) {
-      el.innerHTML = '<div class="activity-empty">Nenhuma atividade ainda.</div>';
+      el.innerHTML = `<div class="activity-empty">${window.i18n.t('dash.noActivity')}</div>`;
       return;
     }
     const colors = { ok:'var(--color-vital)', warn:'var(--color-desconexao)', error:'var(--color-dissolucao)' };
@@ -270,14 +271,27 @@ async function loadRecentActivity() {
       const match = line.match(/\]\s([a-zA-Z0-9_\-\s/\\]+\.md)/);
       if (match) notePath = match[1];
       
+      const t = window.i18n ? window.i18n.t : k => k;
+      
+      let translatedLine = line
+        .replace('Zelador finalizado com sucesso.', t('log.success'))
+        .replace('Zelador finalizado.', t('log.done'))
+        .replace('Erros:', t('log.errors'))
+        .replace('Abaixo do threshold:', t('log.threshold'))
+        .replace('Ja processadas:', t('log.processed'))
+        .replace('Imunes (puladas):', t('log.immune'))
+        .replace('Fase 3 (Dissolucao):', t('log.f3'))
+        .replace('Fase 2 (Desconexao):', t('log.f2'))
+        .replace('Fase 1 (Estiagem):', t('log.f1'));
+
       return `<div class="activity-item" style="justify-content: space-between; align-items: center;">
         <div style="display: flex; gap: 8px; align-items: flex-start; flex: 1;">
           <span class="activity-dot" style="background:${colors[cls]}; margin-top: 4px;"></span>
           <div class="activity-body">
-            <span class="activity-text">${esc(line.replace(/^.*?\]\s*/,''))}</span>
+            <span class="activity-text">${esc(translatedLine.replace(/^.*?\]\s*/,''))}</span>
           </div>
         </div>
-        ${notePath ? `<button class="btn-obsidian" style="padding: 2px 6px; font-size: 10px;" onclick="window.zelador.openInObsidian('${notePath.replace(/\\/g, '/')}')">Abrir</button>` : ''}
+        ${notePath ? `<button class="btn-obsidian" style="padding: 2px 6px; font-size: 10px;" onclick="window.zelador.openInObsidian('${notePath.replace(/\\/g, '/')}')">${t('action.open')}</button>` : ''}
       </div>`;
     }).join('');
   } catch (e) { console.error('getLogs:', e); }
@@ -310,7 +324,7 @@ async function renderFossilized() {
         <p class="fossil-summary">${note.summary ? esc(note.summary) : `<em>${t('fossil.noSummary')}</em>`}</p>
         <div class="fossil-actions">
           <span class="fossil-path">/_fossilized/${esc(note.month)}/</span>
-          <button class="btn-obsidian" data-filepath="${esc(note.filePath)}">Abrir no Obsidian</button>
+          <button class="btn-obsidian" data-filepath="${esc(note.filePath)}">${t('action.openOb')}</button>
         </div>
       </div>
     `).join('');
@@ -342,9 +356,11 @@ function renderPurgatorio() {
   const items = STUB_PURG.sort((a,b) => a.dias - b.dias);
   const urgent = items.filter(i => i.dias <= 7);
 
+  const t = window.i18n.t;
   const banner = $('urgent-banner');
   if (urgent.length > 0) {
-    $('urgent-text').textContent = `${urgent.length} nota${urgent.length > 1 ? 's' : ''} será${urgent.length > 1 ? 'ão' : ''} dissolvida${urgent.length > 1 ? 's' : ''} em menos de 7 dias`;
+    const txt = urgent.length > 1 ? t('purg.urgentDaysN') : t('purg.urgentDays');
+    $('urgent-text').textContent = `${urgent.length} nota${urgent.length > 1 ? 's' : ''}${txt}`;
     banner.classList.remove('hidden');
     // Atualiza badge da sidebar
     $('purg-badge').textContent = urgent.length;
@@ -356,7 +372,7 @@ function renderPurgatorio() {
 
   const tbody = $('purgatory-tbody');
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Nenhuma nota no purgatório.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="5" class="table-empty">${t('purg.empty')}</td></tr>`;
     return;
   }
 
@@ -368,10 +384,10 @@ function renderPurgatorio() {
       <td class="note-link">[[${esc(it.nota)}]]</td>
       <td class="note-path">${esc(it.pasta)}</td>
       <td>${esc(it.dissolve)}</td>
-      <td><span class="badge-decay ${badge}">${it.dias} dia${it.dias !== 1 ? 's' : ''}</span></td>
+      <td><span class="badge-decay ${badge}">${it.dias} ${it.dias !== 1 ? t('purg.days') : t('purg.day')}</span></td>
       <td>
-        <button class="btn-obsidian purg-obs" data-filepath="${esc(notaPath)}">Abrir</button>
-        <button class="btn-immunize" data-nota="${esc(it.nota)}">Imunizar</button>
+        <button class="btn-obsidian purg-obs" data-filepath="${esc(notaPath)}">${t('action.open')}</button>
+        <button class="btn-immunize" data-nota="${esc(it.nota)}">${t('purg.immunize')}</button>
       </td>
     </tr>`;
   }).join('');
@@ -385,12 +401,12 @@ function renderPurgatorio() {
   tbody.querySelectorAll('.btn-immunize').forEach(btn => {
     btn.addEventListener('click', async () => {
       const nota = btn.dataset.nota;
-      if (!confirm(`Imunizar "${nota}"? A nota não avançará mais no ciclo de decaimento.`)) return;
-      btn.textContent = 'Imunizando...'; btn.disabled = true;
+      if (!confirm(`${t('purg.immunize')} "${nota}"?`)) return;
+      btn.textContent = t('purg.immunizing'); btn.disabled = true;
       try {
         // TODO: ligação com IPC real
         btn.closest('tr').style.opacity = '0.4';
-        btn.textContent = 'Imunizada';
+        btn.textContent = t('purg.immunized');
         btn.disabled = true;
       } catch (e) { btn.textContent = 'Erro'; }
     });
@@ -460,7 +476,7 @@ $('cfg-provider')?.addEventListener('change', async (e) => {
 
 $('cfg-btn-change-key')?.addEventListener('click', () => {
   changingKeyProvider = $('cfg-provider').value;
-  $('cfg-key-form-label').textContent = `Nova chave ${changingKeyProvider === 'anthropic' ? 'Anthropic' : 'Google'}`;
+  $('cfg-key-form-label').textContent = window.i18n.t('cfg.newKey');
   $('cfg-new-key').value = '';
   $('cfg-new-key').placeholder = changingKeyProvider === 'anthropic' ? 'sk-ant-...' : 'AIza...';
   $('cfg-key-form').classList.remove('hidden');
@@ -469,7 +485,7 @@ $('cfg-btn-change-key')?.addEventListener('click', () => {
 $('cfg-toggle-key')?.addEventListener('click', () => {
   const inp = $('cfg-new-key');
   inp.type = inp.type === 'password' ? 'text' : 'password';
-  $('cfg-toggle-key').textContent = inp.type === 'password' ? 'mostrar' : 'esconder';
+  $('cfg-toggle-key').textContent = inp.type === 'password' ? window.i18n.t('ob.show') : window.i18n.t('ob.hide');
 });
 
 $('cfg-save-key')?.addEventListener('click', async () => {
@@ -479,7 +495,7 @@ $('cfg-save-key')?.addEventListener('click', async () => {
 
   const btn = $('cfg-save-key');
   const originalText = btn.textContent;
-  btn.textContent = 'Validando...';
+  btn.textContent = window.i18n.t('ob.validating');
   btn.disabled = true;
 
   try {
@@ -535,7 +551,7 @@ $('btn-save-config')?.addEventListener('click', async () => {
 
     setTimeout(() => { fb.textContent = ''; fb.className = 'save-feedback'; }, 2500);
   } catch (e) {
-    fb.textContent = 'Erro ao salvar'; fb.className = 'save-feedback err';
+    fb.textContent = window.i18n.t('cfg.saveError'); fb.className = 'save-feedback err';
   }
 });
 
@@ -571,6 +587,9 @@ $('cfg-language')?.addEventListener('change', async (e) => {
 // INIT
 // ══════════════════════════════════════════════════════════════════════════════
 async function initApp() {
+  const platform = await window.zelador.getPlatform();
+  document.body.classList.add(`platform-${platform}`);
+
   // Carregar idioma salvo
   try {
     const cfg = await api.getConfig();

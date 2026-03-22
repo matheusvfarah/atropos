@@ -11,6 +11,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('zelador', {
 
+  // ─── Platform & Window Controls ───────────────────────────────────────────
+  getPlatform:    () => process.platform,
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow:    () => ipcRenderer.invoke('window:close'),
+
   // ─── Config ───────────────────────────────────────────────────────────────
   getConfig:     ()          => ipcRenderer.invoke('config:get'),
   setConfig:     (updates)   => ipcRenderer.invoke('config:set', updates),

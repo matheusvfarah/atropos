@@ -9,3 +9,4 @@ decay_since: '2026-03-21'
 # Nota Antiga de Teste
 
 Esta nota é antiga e deve entrar na Fase 1.
+[[nota-saudavel]] 

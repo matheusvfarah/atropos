@@ -9,6 +9,7 @@ const { scanVault, getRelativePath, getNoteTitle } = require('./modules/scanner'
 const { readFrontmatter, isDecayImmune, getDecayLevel } = require('./modules/frontmatter');
 const { determinePhase, applyPhase1, applyPhase2, applyPhase3, updateState } = require('./modules/phases');
 const { generatePurgatory } = require('./modules/purgatory');
+const syncManager = require('./modules/syncManager');
 const { DEFAULTS, DECAY_CONFIG_FILE, ZELADOR_DIR } = require('./config/defaults');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,6 +96,9 @@ async function main() {
   // ── Carrega configuração ──
   const config = loadConfig();
   log(`Configuração: ${Object.keys(config.folders || {}).length} pasta(s) configurada(s).`);
+
+  // ── Sincronização Remota (Pull) ──
+  syncManager.pull(VAULT_PATH);
 
   // ── Varre o vault ──
   log('Varrendo vault...');
@@ -224,6 +228,9 @@ async function main() {
   log(`  Erros:                      ${stats.errors}`);
   log('─────────────────────────────────────');
   log('Zelador finalizado.');
+
+  // ── Sincronização Remota (Push) ──
+  syncManager.push(VAULT_PATH);
 }
 
 main().catch((err) => {

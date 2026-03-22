@@ -30,6 +30,8 @@ let lastRunAt    = null;
 function createWindow() {
   nativeTheme.themeSource = store.get('theme') === 'light' ? 'light' : 'dark';
 
+  const isMac = process.platform === 'darwin';
+
   mainWindow = new BrowserWindow({
     width:  900,
     height: 640,
@@ -37,6 +39,9 @@ function createWindow() {
     minHeight: 500,
     title: 'liquid-graph',
     backgroundColor: '#161616',
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    frame: isMac ? true : false,
+    trafficLightPosition: isMac ? { x: 16, y: 16 } : undefined,
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -128,6 +133,18 @@ function registerIPCHandlers() {
   require('./ipc/zelador.ipc').register(ipcMain, () => ({
     zeladorStatus, lastRunAt, nextRunAt: nextRunTimeString(),
   }), runZelador, store);
+
+  // Controles de janela para a custom titlebar (Windows/Linux)
+  ipcMain.handle('window:minimize', () => {
+    BrowserWindow.getFocusedWindow()?.minimize();
+  });
+  ipcMain.handle('window:maximize', () => {
+    const w = BrowserWindow.getFocusedWindow();
+    if (w) w.isMaximized() ? w.unmaximize() : w.maximize();
+  });
+  ipcMain.handle('window:close', () => {
+    BrowserWindow.getFocusedWindow()?.close();
+  });
 }
 
 // ─── App lifecycle ────────────────────────────────────────────────────────
