@@ -37,10 +37,11 @@ function createWindow() {
     height: 640,
     minWidth: 680,
     minHeight: 500,
-    title: 'liquid-graph',
+    title: 'Atropos',
     backgroundColor: '#161616',
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     frame: isMac ? true : false,
+    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     trafficLightPosition: isMac ? { x: 16, y: 16 } : undefined,
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
@@ -48,9 +49,12 @@ function createWindow() {
       nodeIntegration:  false,
       sandbox:          false,
     },
-    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     show: true,
   });
+
+  if (isMac) {
+    app.dock.setIcon(path.join(__dirname, '..', 'assets', 'icon.png'));
+  }
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 

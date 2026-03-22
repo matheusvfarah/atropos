@@ -1,10 +1,19 @@
-# liquid-graph
+# Atropos
 
 **A semantic garbage collector for Obsidian vaults.**
 
-Grafo Líquido is a local desktop daemon that applies programmed entropy to Markdown files based on inactivity. Notes that are not revisited or connected progressively lose visibility in the graph, get disconnected from the knowledge network, and are eventually compressed by AI into a single archival sentence — while the original is always preserved.
+Atropos is a local desktop daemon that applies programmed entropy to Markdown files based on inactivity. Notes that are not revisited or connected progressively lose visibility in the graph, get disconnected from the knowledge network, and are eventually compressed by AI into a single archival sentence — while the original is always preserved.
 
 The system runs silently in the background, executing once per day during off-hours. No cloud sync. No subscriptions. No data ever leaves your machine except for the AI compression call you explicitly configure.
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" width="49%" />
+  <img src="assets/screenshots/graph.png" width="49%" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/purgatory.png" width="49%" />
+</p>
 
 ---
 
@@ -12,13 +21,13 @@ The system runs silently in the background, executing once per day during off-ho
 
 Knowledge management tools are optimized for capture, not for forgetting. Over time, a vault accumulates hundreds of notes that are never revisited — half-formed ideas, outdated meeting notes, obsolete drafts. They consume cognitive space in the graph without contributing meaning. There is no native mechanism in Obsidian to let knowledge decay naturally.
 
-Grafo Líquido is that mechanism.
+Atropos is that mechanism.
 
 ---
 
 ## How It Works
 
-The system evaluates each note's vitality based on the time elapsed since its last modification (`mtime`). Decay happens in three sequential phases:
+The system evaluates each note's vitality based on the time elapsed since its last modification. Decay happens in three sequential phases:
 
 ### Phase 1 — Drought (inactivity > 30 days)
 
@@ -36,66 +45,88 @@ The note's content is sent to an AI provider (Google Gemini or Anthropic Claude)
 
 ---
 
+## Features
+
+### Dashboard
+
+Real-time vault health overview. Displays total note count, active notes, notes in decay across all three phases, fossilized count, and a visual health bar showing the distribution of vault states. Recent activity log shows the last execution results inline.
+
+### Interactive Graph
+
+A live D3.js force simulation of your entire vault. Nodes are colored by decay phase — teal for active, gray for Phase 1, amber for Phase 2, coral for Phase 3, dark for fossilized. Nodes that have lost their wikilinks drift naturally toward the periphery. Hover any node to see its name and decay state. Click to open the note directly in Obsidian.
+
+### Semantic Connections (Ollama)
+
+Optional local AI layer using [Ollama](https://ollama.com) and the `nomic-embed-text` embedding model. When enabled, Atropos computes cosine similarity between all notes and surfaces thematic connections as dashed amber edges in the graph — distinct from real wikilinks. Runs entirely offline. No data leaves the machine. Results are cached to avoid recomputing unchanged notes.
+
+### Purgatory
+
+A list of all notes scheduled for Phase 3 within the next 30 days, sorted by urgency. Divided into two sections: notes expiring within 7 days, and notes expiring within the month. Each entry shows the note name, folder, dissolution date, and days remaining. Every note can be opened in Obsidian or immunized directly from the interface.
+
+### Fossilized Archive
+
+Browse all notes that have completed Phase 3. Each card shows the original note name, the date it was fossilized, and the one-sentence AI summary generated at compression time. Original files are recoverable from `/_fossilized/YYYY-MM/` with a single click.
+
+### Cross-Device Sync
+
+Git-based synchronization between devices. Atropos pulls remote changes before each execution cycle and pushes the updated vault state after completion. Conflicts are resolved automatically using last-write-wins based on file modification timestamps. Requires a Git remote — a private GitHub repository is recommended.
+
+### System Tray
+
+Atropos runs in the background via the system tray. The main window can be closed without stopping the daemon. The tray menu shows the next scheduled execution time and provides quick access to run immediately, open the dashboard, or quit.
+
+---
+
 ## Architecture
 
-Grafo Líquido is a single local component — a Node.js daemon packaged as an Electron desktop application. There is no external server, no n8n orchestrator, no cloud dependency. The AI API call in Phase 3 goes directly from your machine to Google or Anthropic.
+Atropos is a single local component — a Node.js daemon packaged as an Electron desktop application. There is no external server, no orchestrator, no cloud dependency. The AI API call in Phase 3 goes directly from your machine to Google or Anthropic.
 
 ```
-liquid-graph/
+atropos/
 ├── electron/
-│   ├── main.js            — BrowserWindow, system tray, scheduler
-│   ├── preload.js         — Secure contextBridge for IPC
-│   ├── tray.js            — System tray icon and context menu
+│   ├── main.js              — BrowserWindow, system tray, scheduler
+│   ├── preload.js           — Secure contextBridge for IPC
+│   ├── tray.js              — System tray icon and context menu
 │   └── ipc/
-│       ├── config.ipc.js  — Settings management and keytar
-│       └── zelador.ipc.js — Zelador process execution
+│       ├── config.ipc.js    — Settings management and keytar
+│       └── zelador.ipc.js   — Zelador process execution and graph data
 ├── renderer/
 │   ├── index.html
-│   ├── app.js             — Dashboard, Purgatory, Fossilized, Graph tabs
-│   ├── graph.js           — D3.js force simulation
+│   ├── app.js               — Dashboard, Purgatory, Fossilized, Graph tabs
+│   ├── graph.js             — D3.js force simulation with semantic layer
+│   ├── i18n.js              — Internationalization (pt-BR / en-US)
 │   └── styles.css
 ├── zelador/
-│   ├── zelador.js         — Main entry point and orchestration loop
+│   ├── zelador.js           — Main entry point and orchestration loop
 │   ├── config/
-│   │   └── defaults.js    — Default thresholds and constants
+│   │   └── defaults.js      — Default thresholds and constants
 │   └── modules/
-│       ├── scanner.js     — Vault traversal and mtime reading
-│       ├── frontmatter.js — YAML read/write via gray-matter
-│       ├── phases.js      — Phase 1, 2, and 3 logic
-│       ├── git.js         — Automated Git snapshots
-│       ├── linkBreaker.js — Wikilink removal (6 syntax variants)
-│       ├── aiProvider.js  — Multi-provider AI abstraction (BYOK)
-│       ├── fossilizer.js  — File archival and fossil note creation
-│       ├── purgatory.js   — PURGATORIO.md generation
-│       └── lockFile.js    — Prevents concurrent executions
+│       ├── scanner.js       — Vault traversal and mtime reading
+│       ├── frontmatter.js   — YAML read/write via gray-matter
+│       ├── phases.js        — Phase 1, 2, and 3 logic
+│       ├── git.js           — Automated Git snapshots
+│       ├── linkBreaker.js   — Wikilink removal (6 syntax variants)
+│       ├── aiProvider.js    — Multi-provider AI abstraction (BYOK)
+│       ├── fossilizer.js    — File archival and fossil note creation
+│       ├── purgatory.js     — PURGATORIO.md generation
+│       ├── semanticLinks.js — Ollama embedding and similarity engine
+│       ├── syncManager.js   — Git pull/push with conflict resolution
+│       └── lockFile.js      — Prevents concurrent executions
 ├── assets/
+│   ├── icon.icns / icon.ico / icon.png / icon.svg
+│   └── screenshots/
 ├── electron-builder.yml
 └── .github/workflows/
-    └── release.yml        — Cross-platform build and release CI
+    └── release.yml          — Cross-platform build and release CI
 ```
 
 ---
 
 ## Installation
 
-### Semantic connections (optional)
-
-Grafo Líquido can discover thematic connections between notes
-using local AI embeddings via [Ollama](https://ollama.com).
-No data leaves your machine.
-
-Requirements:
-1. Install Ollama: https://ollama.com/download
-2. Pull the embedding model:
-   ollama pull nomic-embed-text
-3. In the app: Settings → Semantic connections → Ollama (local)
-
-The app detects Ollama automatically. If it is not running,
-clicking "Analyse connections" shows setup instructions inline.
-
 ### Desktop Application
 
-Download the installer for your operating system from [Releases](https://github.com/matheusnmto/liquid-graph/releases):
+Download the installer for your operating system from [Releases](https://github.com/matheusnmto/atropos/releases):
 
 | Platform | File |
 |----------|------|
@@ -108,8 +139,8 @@ No runtime dependencies required. Node.js is bundled inside the application.
 ### From Source
 
 ```bash
-git clone https://github.com/matheusnmto/liquid-graph.git
-cd liquid-graph
+git clone https://github.com/matheusnmto/atropos.git
+cd atropos
 npm install
 cd zelador && npm install && cd ..
 npm start
@@ -168,7 +199,7 @@ Use this for permanent references, people notes, active project documents, or an
 
 ### Obsidian Graph Colors
 
-To visualize decay state in Obsidian's graph view, add the following `colorGroups` to `.obsidian/graph.json`:
+To visualize decay state in Obsidian's native graph view, add the following `colorGroups` to `.obsidian/graph.json`:
 
 ```json
 "colorGroups": [
@@ -183,7 +214,9 @@ To visualize decay state in Obsidian's graph view, add the following `colorGroup
 
 ## AI Integration
 
-Phase 3 compression requires an AI API key. Grafo Líquido supports two providers:
+### Phase 3 Compression
+
+Phase 3 compression requires an AI API key. Atropos supports two cloud providers:
 
 | Provider | Model | Estimated cost per note |
 |----------|-------|------------------------|
@@ -192,7 +225,7 @@ Phase 3 compression requires an AI API key. Grafo Líquido supports two provider
 
 API keys are entered through the application's Settings screen and stored exclusively in the operating system keychain via [keytar](https://github.com/atom/node-keytar). Keys are never written to disk, never logged, and never transmitted to any server other than the provider's official API endpoint.
 
-**Privacy note:** In BYOK mode, note content travels directly from your machine to the AI provider's API. No Grafo Líquido server receives, processes, or stores your notes at any point.
+**Privacy note:** In BYOK mode, note content travels directly from your machine to the AI provider's API. No Atropos server receives, processes, or stores your notes at any point.
 
 For CLI usage only, keys can also be set via environment variables in `zelador/.env`:
 
@@ -200,6 +233,23 @@ For CLI usage only, keys can also be set via environment variables in `zelador/.
 AI_PROVIDER=google
 GOOGLE_AI_API_KEY=AIza...
 ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Semantic Connections (Local, Optional)
+
+Atropos can discover thematic connections between notes using local AI embeddings via [Ollama](https://ollama.com). No data leaves your machine.
+
+```bash
+# Install Ollama from https://ollama.com/download, then:
+ollama pull nomic-embed-text
+```
+
+Once installed, enable it in Settings → Semantic connections → Ollama (local). The app detects Ollama automatically. If it is not running when you click Analyse connections, setup instructions appear inline.
+
+Embedding results are cached in `.zelador/embeddings.json`. Add it to `.gitignore` to avoid committing large binary data:
+
+```
+.zelador/embeddings.json
 ```
 
 ---
@@ -215,9 +265,27 @@ zelador: snapshot pre-F2 2026-03-21 "Note Name"
 zelador: snapshot pre-F3 2026-03-21 "Note Name"
 ```
 
-**Layer 2 — Fossilized archive.** In Phase 3, the original note is moved — never deleted — to `/_fossilized/YYYY-MM/`. It is recoverable through Obsidian's file explorer with a single click, without requiring Git or terminal access.
+**Layer 2 — Fossilized archive.** In Phase 3, the original note is moved — never deleted — to `/_fossilized/YYYY-MM/`. It is recoverable through Obsidian's file explorer or directly from the Fossilized tab in the app, without requiring Git or terminal access.
 
 **Concurrency protection.** The daemon creates a lock file at `/tmp/zelador.lock` on startup and cleans it on exit. If a previous process died unexpectedly, the lock is validated against the process table before aborting.
+
+---
+
+## Cross-Device Sync
+
+To synchronize decay state across multiple machines, initialize a Git remote for your vault:
+
+```bash
+cd /path/to/your/vault
+git init
+git remote add origin https://github.com/your-user/your-vault-private.git
+git add -A && git commit -m "initial vault"
+git push -u origin main
+```
+
+On subsequent machines, clone the repository as the vault path. Atropos detects the remote automatically and handles pull/push around each execution cycle. A private repository is strongly recommended.
+
+Conflicts between devices are resolved using last-write-wins based on file modification timestamps. If the remote is unreachable, Atropos continues the local execution cycle and retries on the next run.
 
 ---
 
@@ -245,26 +313,24 @@ For system-level scheduling outside the Electron app:
 
 ```bash
 # cron — add via crontab -e
-0 3 * * * cd /path/to/liquid-graph && node zelador/zelador.js >> /var/log/zelador.log 2>&1
+0 3 * * * cd /path/to/atropos && node zelador/zelador.js >> /var/log/atropos.log 2>&1
 ```
 
 ---
 
 ## The PURGATORIO.md File
 
-On every execution, the Zelador generates or updates `PURGATORIO.md` at the root of the vault. This file lists all notes scheduled for Phase 3 within the next 30 days, sorted by urgency. It is visible directly in Obsidian — no external notification or email required.
+On every execution, Atropos generates or updates `PURGATORIO.md` at the root of the vault. This file lists all notes scheduled for Phase 3 within the next 30 days, sorted by urgency. It is visible directly in Obsidian — no external notification or email required.
 
-Opening any note listed in the Purgatório resets its decay cycle automatically.
-
-The file itself carries `decay_immune: true` and is never processed by the system.
+Opening any note listed in the Purgatory resets its decay cycle automatically. The file itself carries `decay_immune: true` and is never processed by the system.
 
 ---
 
 ## Contributing
 
 ```bash
-git clone https://github.com/matheusnmto/liquid-graph.git
-cd liquid-graph
+git clone https://github.com/matheusnmto/atropos.git
+cd atropos
 npm install
 cd zelador && npm install && cd ..
 npm start
@@ -273,14 +339,14 @@ npm start
 To simulate note inactivity for testing:
 
 ```bash
-# Set mtime to 35 days ago (triggers Phase 1)
+# Triggers Phase 1 (35 days inactive)
 touch -t $(date -v-35d +%Y%m%d%H%M) vault/notes/test-note.md
 
-# Set mtime to 95 days ago (triggers Phase 3)
+# Triggers Phase 3 (95 days inactive)
 touch -t 202312010000 vault/notes/test-note.md
 ```
 
-**Commit conventions:** messages in English, format `type: description`  
+**Commit conventions:** messages in English, format `type: description`
 Examples: `feat: add resurrection module`, `fix: regex escaping for special chars`
 
 **Security:** API keys must never appear in logs, commits, or error messages — not even partially.
@@ -292,7 +358,9 @@ Pull requests are welcome. Open an issue first for any change that affects the d
 ## Roadmap
 
 - Resurrection module — automatic decay reset when a new wikilink is created pointing to a decaying note
-- i18n — interface language toggle (Portuguese / English)
+- Undo last execution — one-click Git revert of the last Zelador run from the dashboard
+- Archaeology mode — timeline slider showing vault state at any past point using existing Git history
+- Weekly digest — auto-generated summary note of vault health and decay activity
 - SaaS mode — centralized AI key with usage billing via Stripe
 - Official Obsidian plugin — native integration as a Community Plugin
 

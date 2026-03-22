@@ -1,5 +1,5 @@
 {
-  "name": "grafo-liquido",
+  "name": "atropos",
   "version": "1.0.0",
   "description": "Semantic garbage collector para vaults do Obsidian",
   "main": "electron/main.js",
@@ -18,8 +18,8 @@
     "url": "git+https://github.com/matheusnmto/liquid-graph.git"
   },
   "build": {
-    "appId": "com.grafoliquido.app",
-    "productName": "liquid-graph",
+    "appId": "com.atropos.app",
+    "productName": "Atropos",
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "assets/icon.icns",
