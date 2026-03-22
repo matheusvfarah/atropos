@@ -49,12 +49,10 @@ function createWindow() {
       sandbox:          false,
     },
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),
-    show: false,
+    show: true,
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-
-  mainWindow.once('ready-to-show', () => mainWindow.show());
 
   // Minimizar para tray ao fechar
   mainWindow.on('close', (event) => {
@@ -70,7 +68,7 @@ function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:"
+          "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:"
         ],
       },
     });

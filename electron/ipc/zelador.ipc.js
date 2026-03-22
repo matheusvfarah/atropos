@@ -206,7 +206,12 @@ function register(ipcMain, getStatusFn, runNowFn, store) {
 
     const fs     = require('fs');
     const path   = require('path');
-    const matter = require('gray-matter');
+    let matter;
+    try {
+      matter = require('gray-matter');
+    } catch {
+      matter = require(path.join(__dirname, '../../zelador/node_modules/gray-matter'));
+    }
 
     const IGNORED = new Set(['_fossilized', '.zelador', 'node_modules',
                               'electron', 'renderer', '.obsidian', '.git',
