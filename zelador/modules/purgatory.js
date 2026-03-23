@@ -36,7 +36,10 @@ async function generatePurgatory(vaultPath, config, resolveConfig) {
     if (daysUntilF3 < -7) continue;
 
     const noteName = path.basename(file.filePath, '.md');
-    const folder = '/' + relativePath.split('/').slice(0, -1).join('/');
+    let folder = relativePath.split('/').slice(0, -1).join('/');
+    if (!folder.startsWith('/')) folder = '/' + folder;
+    if (folder === '') folder = '/';
+    
     const dissolutionDate = new Date(
       Date.now() + daysUntilF3 * 24 * 60 * 60 * 1000
     ).toLocaleDateString('pt-BR');
@@ -114,7 +117,7 @@ async function generatePurgatory(vaultPath, config, resolveConfig) {
   lines.push('*Gerado automaticamente pelo Zelador · Não edite manualmente*');
 
   const purgPath = path.join(vaultPath, 'PURGATORIO.md');
-  fs.writeFileSync(purgPath, lines.join('\\n'), 'utf-8');
+  fs.writeFileSync(purgPath, lines.join('\n'), 'utf-8');
 
   console.log(`[${new Date().toTimeString().slice(0,8)}] [purgatory] PURGATORIO.md atualizado: ${atRisk.length} nota(s) listada(s) (${urgent.length} urgente(s)).`);
 

@@ -441,7 +441,7 @@ async function loadConfig() {
 
     // Idioma
     const langSel = $('cfg-language');
-    if (langSel) langSel.value = c.language || 'pt-BR';
+    if (langSel) langSel.value = c.language || 'en-US';
 
     // Status das chaves
     await refreshKeyStatus(c.provider || 'anthropic');
@@ -568,7 +568,7 @@ $('cfg-btn-export')?.addEventListener('click', async () => {
 
 $('cfg-btn-reset')?.addEventListener('click', async () => {
   if (!confirm('Resetar TODAS as configurações? Isso não afeta os arquivos do vault.')) return;
-  await api.setConfig({ vaultPath: '', onboarded: false, provider: 'anthropic', notifications: true, schedule: { hour: 3, minute: 0 } });
+  await api.setConfig({ vaultPath: '', onboarded: false, provider: 'anthropic', notifications: true, schedule: { hour: 3, minute: 0 }, language: 'en-US' });
   location.reload();
 });
 
@@ -581,6 +581,17 @@ $('cfg-language')?.addEventListener('change', async (e) => {
   applyTranslations();
   // Persiste a escolha
   try { await api.setConfig({ language: locale }); } catch (_) {}
+  const obLang = $('ob-language');
+  if (obLang) obLang.value = locale;
+});
+
+$('ob-language')?.addEventListener('change', async (e) => {
+  const locale = e.target.value;
+  if (window.i18n) window.i18n.setLocale(locale);
+  applyTranslations();
+  try { await api.setConfig({ language: locale }); } catch (_) {}
+  const cfgLang = $('cfg-language');
+  if (cfgLang) cfgLang.value = locale;
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -628,11 +639,13 @@ async function initApp() {
   // Carregar idioma salvo
   try {
     const cfg = await api.getConfig();
-    const locale = cfg.language || 'pt-BR';
+    const locale = cfg.language || 'en-US';
     if (window.i18n) window.i18n.setLocale(locale);
     applyTranslations();
     const langSel = $('cfg-language');
     if (langSel) langSel.value = locale;
+    const obLangSel = $('ob-language');
+    if (obLangSel) obLangSel.value = locale;
   } catch (_) {}
 
   await loadStatus();

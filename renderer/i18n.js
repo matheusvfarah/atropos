@@ -355,7 +355,7 @@ const translations = {
   },
 };
 
-let _locale = 'pt-BR';
+let _locale = 'en-US';
 
 function setLocale(locale) {
   if (translations[locale]) _locale = locale;
@@ -364,7 +364,7 @@ function setLocale(locale) {
 function getLocale() { return _locale; }
 
 function t(key) {
-  return translations[_locale]?.[key] ?? translations['pt-BR']?.[key] ?? key;
+  return translations[_locale]?.[key] ?? translations['en-US']?.[key] ?? key;
 }
 
 function getAvailableLocales() {

@@ -49,6 +49,18 @@ function updateState(vaultPath, update) {
   }
 }
 
+/**
+ * Garante que decay_since existe no frontmatter.
+ * Se não existir, calcula baseado em mtime ou hoje.
+ */
+function ensureDecaySince(filePath, currentData) {
+  if (currentData.decay_since) return {};
+  
+  // Se não tem decay_since, usamos a data de hoje como fallback seguro
+  // (Idealmente usaríamos mtime, mas o mtime pode já ter sido alterado)
+  return { decay_since: toISODate() };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // FASE 1 — Estiagem (inatividade > phase1_days)
 // REGRA CRÍTICA: NUNCA modifica o corpo da nota. Apenas YAML.
@@ -139,6 +151,7 @@ async function applyPhase2(filePath, vaultPath, frontmatter) {
   writeFrontmatter(filePath, {
     decay_level: 2,
     links_removed_at: today,
+    ...ensureDecaySince(filePath, frontmatter),
   });
   log(`Frontmatter atualizado: decay_level=2, links_removed_at=${today}`);
 
@@ -214,6 +227,11 @@ async function applyPhase3(filePath, vaultPath, frontmatterData) {
   // -- PASSO 5: Fossilizar (copia + nota leve) --
   const fossilizer = require('./fossilizer');
   const { fossilizedPath } = fossilizer.fossilize(filePath, vaultPath, summary);
+
+  // Garante que o original fossilizado também tenha decay_since se faltava
+  if (!frontmatterData.decay_since) {
+    writeFrontmatter(fossilizedPath, { decay_since: toISODate() });
+  }
 
   // -- PASSO 6: Registrar no state.json --
   updateState(vaultPath, {

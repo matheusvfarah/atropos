@@ -167,6 +167,19 @@ body { display: flex; flex-direction: column; height: 100vh; }
   margin-top: 20px;
 }
 
+.ob-lang-switcher {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+}
+.ob-lang-switcher select {
+  padding: 6px 12px;
+  min-width: 130px;
+  font-size: 11px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
 /* ==========================================================================
    APP E ESTRUTURA
    ========================================================================== */
