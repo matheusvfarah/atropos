@@ -177,7 +177,12 @@ const translations = {
     'ob.success':      'Configuração concluída!',
     'purg.urgentNotes':'notas urgentes',
     'dash.loadingVault':'carregando vault...',
-    'fossil.desc2':    '. Somente leitura.'
+    'fossil.desc2':    '. Somente leitura.',
+    'ob.noneName':     'Sem IA',
+    'ob.noneModel':    'Arquivar sem resumo',
+    'ob.skip':         'Pular por agora',
+    'cfg.noAi':        'Sem IA — apenas arquivar',
+    'cfg.providerDesc': 'Opcional. Usado na Fase 3 para resumir notas. Sem chave, as notas são arquivadas sem resumo.'
   },
 
   'en-US': {
@@ -351,7 +356,12 @@ const translations = {
     'ob.success':      'Setup complete!',
     'purg.urgentNotes':'urgent notes',
     'dash.loadingVault':'loading vault...',
-    'fossil.desc2':    '. Read-only.'
+    'fossil.desc2':    '. Read-only.',
+    'ob.noneName':     'No AI',
+    'ob.noneModel':    'Archive without summary',
+    'ob.skip':         'Skip for now',
+    'cfg.noAi':        'No AI — archive only',
+    'cfg.providerDesc': 'Optional. Used in Phase 3 to summarize notes. Without a key, notes are archived without a summary.'
   },
 };
 

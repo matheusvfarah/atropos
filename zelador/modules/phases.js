@@ -204,24 +204,25 @@ async function applyPhase3(filePath, vaultPath, frontmatterData) {
     return { success: false, error: `Falha ao ler arquivo: ${err.message}` };
   }
 
-  // -- PASSO 3: Configurar provider via env vars --
-  const aiProvider = require('./aiProvider');
+  // -- PASSO 3: Tentar compressão via IA — completamente opcional --
+  let summary = null;
   const provider = process.env.AI_PROVIDER || 'google';
-  const apiKey   = provider === 'anthropic'
+  const apiKey = provider === 'anthropic'
     ? process.env.ANTHROPIC_API_KEY
     : process.env.GOOGLE_AI_API_KEY;
 
-  if (!apiKey) {
-    return { success: false, error: `Nenhuma API key configurada para provider "${provider}". Adicione ao zelador/.env.` };
-  }
-
-  // -- PASSO 4: Comprimir via IA --
-  let summary;
-  try {
-    summary = await aiProvider.compress(content, { provider, apiKey });
-    log(`Resumo gerado: "${summary}"`);
-  } catch (err) {
-    return { success: false, error: `IA falhou (${err.code || 'UNKNOWN'}): ${err.message}` };
+  if (apiKey && apiKey.trim().length > 0) {
+    try {
+      const aiProvider = require('./aiProvider');
+      summary = await aiProvider.compress(content, { provider, apiKey });
+      log(`Resumo gerado: "${summary}"`);
+    } catch (err) {
+      // IA falhou mas não aborta — continua sem resumo
+      log(`IA indisponível (${err.message}). Fossilizando sem resumo.`);
+      summary = null;
+    }
+  } else {
+    log(`Sem API key configurada para provider "${provider}". Fossilizando sem resumo.`);
   }
 
   // -- PASSO 5: Fossilizar (copia + nota leve) --

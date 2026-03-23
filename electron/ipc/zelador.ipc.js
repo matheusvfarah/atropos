@@ -56,7 +56,7 @@ async function runZeladorProcess(vaultPath, store) {
       const accountName = provider === 'anthropic' ? 'anthropic-key' : 'google-key';
       apiKey = (await keytar.getPassword('grafo-liquido', accountName)) || '';
     } catch (err) {
-      addLog(`[zelador.ipc] Aviso: não foi possível ler keychain: ${err.message}`);
+      addLog(`[zelador.ipc] Aviso: chave não encontrada ou erro no keychain. Continuando sem IA.`);
     }
 
     const env = {

@@ -99,14 +99,19 @@ document.querySelectorAll('.provider-card').forEach(card => {
     document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     obProvider = card.dataset.provider;
-    const hints = { anthropic: 'Obtenha em console.anthropic.com', google: 'Obtenha em aistudio.google.com' };
-    $('ob-key-hint').textContent = hints[obProvider] || '';
-    $('ob-api-key').placeholder = obProvider === 'anthropic' ? 'sk-ant-...' : 'AIza...';
+    
+    if (obProvider === 'none') {
+      $('ob-key-hint').textContent = '';
+      $('ob-api-key').placeholder = '';
+    } else {
+      const hints = { anthropic: 'Obtenha em console.anthropic.com', google: 'Obtenha em aistudio.google.com' };
+      $('ob-key-hint').textContent = hints[obProvider] || '';
+      $('ob-api-key').placeholder = obProvider === 'anthropic' ? 'sk-ant-...' : 'AIza...';
+    }
   });
 });
 
 $('ob-back-2').addEventListener('click', () => showObStep(1));
-$('ob-next-2').addEventListener('click', () => showObStep(3));
 
 // Passo 3: API key
 $('ob-toggle-key').addEventListener('click', () => {
@@ -118,7 +123,10 @@ $('ob-toggle-key').addEventListener('click', () => {
 
 $('ob-back-3').addEventListener('click', () => showObStep(2));
 
-$('ob-validate').addEventListener('click', async () => {
+$('ob-validate').addEventListener('click', async () => validateAndFinish());
+$('ob-skip-key').addEventListener('click', async () => finishOnboarding(false));
+
+async function validateAndFinish() {
   const fb = $('ob-feedback');
   const key = $('ob-api-key').value.trim();
   if (!key) { fb.textContent = 'Insira uma chave.'; fb.className = 'ob-feedback error'; return; }
@@ -132,6 +140,18 @@ $('ob-validate').addEventListener('click', async () => {
 
     fb.textContent = window.i18n.t('ob.saving');
     await api.setApiKey(obProvider, key);
+    await finishOnboarding(true);
+  } catch (e) {
+    fb.textContent = '✗ ' + (e.message || 'Erro ao validar/salvar.'); fb.className = 'ob-feedback error';
+  }
+}
+
+async function finishOnboarding(hasKey) {
+  const fb = $('ob-feedback');
+  if (!hasKey) {
+    fb.textContent = window.i18n.t('ob.saving'); fb.className = 'ob-feedback loading';
+  }
+  try {
     await api.setConfig({ vaultPath: obVault, provider: obProvider, onboarded: true });
     fb.textContent = '✓ ' + window.i18n.t('ob.success'); fb.className = 'ob-feedback ok';
     setTimeout(async () => {
@@ -139,7 +159,15 @@ $('ob-validate').addEventListener('click', async () => {
       await initApp();
     }, 600);
   } catch (e) {
-    fb.textContent = '✗ ' + (e.message || 'Erro ao validar/salvar.'); fb.className = 'ob-feedback error';
+    fb.textContent = '✗ ' + (e.message || 'Erro ao salvar configuração.'); fb.className = 'ob-feedback error';
+  }
+}
+
+$('ob-next-2').addEventListener('click', () => {
+  if (obProvider === 'none') {
+    finishOnboarding(false);
+  } else {
+    showObStep(3);
   }
 });
 
@@ -442,6 +470,7 @@ async function loadConfig() {
     minSel.value  = c.schedule?.minute ?? 0;
 
     $('cfg-provider').value = c.provider || 'anthropic';
+    $('cfg-api-key-section').style.display = c.provider === 'none' ? 'none' : 'flex';
     $('cfg-active-provider').textContent = c.provider === 'google' ? 'Google Gemini' : 'Anthropic Claude';
     $('cfg-notify').checked = c.notifications !== false;
 
@@ -475,6 +504,14 @@ $('cfg-vault-manual')?.addEventListener('input', (e) => {
   if (val) $('cfg-vault-display').textContent = val;
 });
 
+  $('cfg-provider').addEventListener('change', async (e) => {
+    const newProv = e.target.value;
+    $('cfg-api-key-section').style.display = newProv === 'none' ? 'none' : 'flex';
+    
+    api.setConfig({ provider: newProv });
+    $('cfg-active-provider').textContent = newProv;
+    $('cfg-active-provider').className = `provider-badge ${newProv}`;
+  });
 $('cfg-provider')?.addEventListener('change', async (e) => {
   $('cfg-active-provider').textContent = e.target.value === 'google' ? 'Google Gemini' : 'Anthropic Claude';
   await refreshKeyStatus(e.target.value);

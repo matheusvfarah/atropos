@@ -210,13 +210,15 @@ To visualize decay state in Obsidian's native graph view, add the following `col
 ]
 ```
 
----
-
 ## AI Integration
 
-### Phase 3 Compression
+AI is optional. Without a configured key, Phase 3 still runs —
+notes are archived to `/_fossilized/` with a recovery link,
+but without an AI-generated summary.
 
-Phase 3 compression requires an AI API key. Atropos supports two cloud providers:
+### Phase 3 Compression (Optional)
+
+To enable summarization, configure a provider in Settings:
 
 | Provider | Model | Estimated cost per note |
 |----------|-------|------------------------|

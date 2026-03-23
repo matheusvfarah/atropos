@@ -75,6 +75,10 @@
             <div class="provider-model">gemini-1.5-flash</div>
             <span class="provider-tag free" data-i18n="ob.freeUntilQuota">Gratuito até cota</span>
           </div>
+          <div class="provider-card" id="ob-card-none" data-provider="none">
+            <div class="provider-name" data-i18n="ob.noneName">Sem IA</div>
+            <div class="provider-model" data-i18n="ob.noneModel">Arquivar sem resumo</div>
+          </div>
         </div>
 
         <div class="ob-nav">
@@ -100,7 +104,10 @@
 
         <div class="ob-nav">
           <button class="btn-text" id="ob-back-3" data-i18n="ob.back">← Voltar</button>
-          <button class="btn-primary" id="ob-validate" data-i18n="ob.validate">Validar e entrar</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-secondary" id="ob-skip-key" data-i18n="ob.skip">Pular por agora</button>
+            <button class="btn-primary" id="ob-validate" data-i18n="ob.validate">Validar e entrar</button>
+          </div>
         </div>
       </div>
 
@@ -384,12 +391,13 @@
                 <div class="settings-row-control">
                   <span class="provider-badge" id="cfg-active-provider">—</span>
                   <select id="cfg-provider">
+                    <option value="none" data-i18n="cfg.noAi">Sem IA — apenas arquivar</option>
                     <option value="anthropic">Anthropic Claude</option>
                     <option value="google">Google Gemini</option>
                   </select>
                 </div>
               </div>
-              <div class="settings-row">
+              <div class="settings-row" id="cfg-api-key-section">
                 <div class="settings-row-info">
                   <label data-i18n="cfg.apiKey">Chave de API</label>
                   <p data-i18n="cfg.apiKeyDesc">Armazenada no keychain do sistema. Nunca enviada a servidores externos.</p>

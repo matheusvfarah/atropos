@@ -54,6 +54,11 @@ function fossilize(filePath, vaultPath, summary) {
   const isoDate = toISODate(now);
   const ptDate  = toPTDate(now);
 
+  // ── Linha de resumo — com ou sem IA ──
+  const summaryLine = summary
+    ? `>**Resumo:** ${summary}`
+    : `>Resumo não disponível — provedor de IA não configurado.`;
+
   // ── Nota leve que substitui o original ──
   const lightContent = `---
 decay_level: 3
@@ -64,7 +69,7 @@ decay_immune: true
 ---
 
 > [!fossil] Nota dissolvida em ${ptDate}
->**Resumo:** ${summary}
+${summaryLine}
 > [Recuperar nota original](${relFossilPath})
 `;
 
