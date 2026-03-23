@@ -116,7 +116,9 @@ function commitSnapshot(vaultPath, noteName, phase) {
   }
 
   const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const message = `zelador: snapshot pre-${phase} ${date} "${noteName}"`;
+  // Escapa aspas no nome da nota para não quebrar o comando shell
+  const safeNoteName = noteName.replace(/"/g, '\\"');
+  const message = `zelador: snapshot pre-${phase} ${date} "${safeNoteName}"`;
 
   try {
     // Stage de todas as mudanças (novas, modificadas, deletadas)
