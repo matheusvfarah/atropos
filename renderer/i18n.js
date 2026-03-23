@@ -12,6 +12,7 @@ const translations = {
     'nav.purgatory':   'Purgatório',
     'nav.fossilized':  'Fossilizadas',
     'nav.grafo':       'Grafo',
+    'nav.insights':    'Insights',
     'nav.settings':    'Configurações',
 
     // Dashboard
@@ -182,7 +183,13 @@ const translations = {
     'ob.noneModel':    'Arquivar sem resumo',
     'ob.skip':         'Pular por agora',
     'cfg.noAi':        'Sem IA — apenas arquivar',
-    'cfg.providerDesc': 'Opcional. Usado na Fase 3 para resumir notas. Sem chave, as notas são arquivadas sem resumo.'
+    'cfg.providerDesc': 'Opcional. Usado na Fase 3 para resumir notas. Sem chave, as notas são arquivadas sem resumo.',
+    'insig.desc':      'Descobertas inteligentes sobre o seu vault.',
+    'insig.refresh':   'Atualizar',
+    'insig.dejavuTitle': 'Déjà Vu — Ideias Recorrentes',
+    'insig.calendarTitle': 'Calendário — Contexto Expirado',
+    'insig.noPatterns': 'Nenhum padrão recorrente detectado.',
+    'insig.noExpired': 'Nenhuma nota com datas expiradas detectada.'
   },
 
   'en-US': {
@@ -191,6 +198,7 @@ const translations = {
     'nav.purgatory':   'Purgatory',
     'nav.fossilized':  'Fossilized',
     'nav.grafo':       'Graph',
+    'nav.insights':    'Insights',
     'nav.settings':    'Settings',
 
     // Dashboard
@@ -361,7 +369,13 @@ const translations = {
     'ob.noneModel':    'Archive without summary',
     'ob.skip':         'Skip for now',
     'cfg.noAi':        'No AI — archive only',
-    'cfg.providerDesc': 'Optional. Used in Phase 3 to summarize notes. Without a key, notes are archived without a summary.'
+    'cfg.providerDesc': 'Optional. Used in Phase 3 to summarize notes. Without a key, notes are archived without a summary.',
+    'insig.desc':      'Smart discoveries about your vault.',
+    'insig.refresh':   'Refresh',
+    'insig.dejavuTitle': 'Déjà Vu — Recurring Ideas',
+    'insig.calendarTitle': 'Calendar — Expired Context',
+    'insig.noPatterns': 'No recurring patterns detected.',
+    'insig.noExpired': 'No notes with expired dates detected.'
   },
 };
 

@@ -189,6 +189,16 @@
             </svg>
             <span data-i18n="nav.grafo">Grafo Interativo</span>
           </a>
+          <a class="nav-item" data-view="insights" id="nav-insights">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="2" fill="currentColor"/>
+              <path d="M8 2v2M8 12v2M2 8h2M12 8h2" stroke="currentColor"
+                    stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M4.1 4.1l1.4 1.4M10.5 10.5l1.4 1.4M4.1 11.9l1.4-1.4M10.5 5.5l1.4-1.4"
+                    stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+            <span data-i18n="nav.insights">Insights</span>
+          </a>
           <a class="nav-item" data-view="config" id="nav-config">
             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
@@ -327,6 +337,33 @@
             <div id="graph-tooltip"
               style="position:absolute; display:none; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border-subtle); padding:6px 10px; border-radius:4px; font-size:12px; pointer-events:none; z-index:100;">
             </div>
+          </div>
+        </section>
+
+        <!-- ─── INSIGHTS ──────────────────────────────────────────────────── -->
+        <section class="view" id="view-insights">
+          <div class="screen-header">
+            <div>
+              <h1 class="text-title-lg" data-i18n="nav.insights">Insights</h1>
+              <p class="text-caption" data-i18n="insig.desc">Descobertas inteligentes sobre o seu vault.</p>
+            </div>
+            <button class="btn-run" id="btn-refresh-insights">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
+              </svg>
+              <span data-i18n="insig.refresh">Atualizar</span>
+            </button>
+          </div>
+
+          <div class="insight-section">
+            <div class="insight-section-title" data-i18n="insig.dejavuTitle">Déjà Vu — Ideias Recorrentes</div>
+            <div id="dejavu-section" class="insight-list"></div>
+          </div>
+
+          <div class="insight-section">
+            <div class="insight-section-title" data-i18n="insig.calendarTitle">Calendário — Contexto Expirado</div>
+            <div id="calendar-section" class="insight-list"></div>
           </div>
         </section>
 

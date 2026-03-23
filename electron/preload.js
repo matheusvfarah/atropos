@@ -51,5 +51,9 @@ contextBridge.exposeInMainWorld('zelador', {
   gitSync: () => ipcRenderer.invoke('git:sync'),
   checkOllama: () => ipcRenderer.invoke('graph:check-ollama'),
   analyzeSemantics: () => ipcRenderer.invoke('graph:analyze-semantics'),
-  saveSemantics: (conns) => ipcRenderer.invoke('graph:save-semantics', conns)
+  saveSemantics: (conns) => ipcRenderer.invoke('graph:save-semantics', conns),
+
+  // ── Déjà Vu & Calendar ─────────────────────────────────────────────────────
+  checkDejavu: () => ipcRenderer.invoke('dejavu:check'),
+  analyzeCalendarDecay: (filePath) => ipcRenderer.invoke('calendar:analyze', filePath)
 });

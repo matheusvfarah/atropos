@@ -2,6 +2,7 @@
 zelador/node_modules/
 zelador/.env
 .zelador/embeddings.json
+.zelador/dejavu.json
 
 # Obsidian
 .obsidian/workspace.json

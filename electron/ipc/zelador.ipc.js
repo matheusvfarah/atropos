@@ -403,6 +403,59 @@ function register(ipcMain, getStatusFn, runNowFn, store) {
       return { success: false, error: e.message };
     }
   });
+
+  // ── Déjà Vu & Calendar Decay ─────────────────────────────────────────────
+  ipcMain.handle('dejavu:check', async () => {
+    if (!store) return [];
+    const vaultPath = store.get('vaultPath');
+    if (!vaultPath) return [];
+
+    try {
+      const { scanVault } = require('../../zelador/modules/scanner');
+      const { checkDejavu } = require('../../zelador/modules/dejavu');
+
+      const fossilDir = path.join(vaultPath, '_fossilized');
+      const fossilNotes = [];
+
+      if (fs.existsSync(fossilDir)) {
+        const months = fs.readdirSync(fossilDir)
+          .filter(d => {
+            try { return fs.statSync(path.join(fossilDir, d)).isDirectory(); }
+            catch { return false; }
+          });
+
+        for (const month of months) {
+          const monthDir = path.join(fossilDir, month);
+          let files = [];
+          try { files = fs.readdirSync(monthDir).filter(f => f.endsWith('.md')); }
+          catch { continue; }
+
+          for (const file of files) {
+            fossilNotes.push({
+              filePath: path.join(monthDir, file),
+              month,
+            });
+          }
+        }
+      }
+
+      const activeNotes = await scanVault(vaultPath);
+      return await checkDejavu(vaultPath, activeNotes, fossilNotes);
+    } catch (err) {
+      console.error('[ipc] Erro no checkDejavu:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('calendar:analyze', async (event, filePath) => {
+    try {
+      const { analyzeCalendarDecay } = require('../../zelador/modules/calendarDecay');
+      return analyzeCalendarDecay(filePath);
+    } catch (err) {
+      console.error('[ipc] Erro no analyzeCalendarDecay:', err);
+      return { hasExpiredDates: false, multiplier: 1, dates: [] };
+    }
+  });
 }
 
 module.exports = { register, runZeladorProcess };

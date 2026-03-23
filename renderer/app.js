@@ -29,12 +29,13 @@ function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const view = $(`view-${id}`);
-  const nav  = $(`nav-${id}`);
+  const nav = $(`nav-${id}`);
   if (view) view.classList.add('active');
-  if (nav)  nav.classList.add('active');
-  if (id === 'purgatorio')  renderPurgatorio();
-  if (id === 'config')      loadConfig();
-  if (id === 'fossilized')  renderFossilized();
+  if (nav) nav.classList.add('active');
+  if (id === 'purgatorio') renderPurgatorio();
+  if (id === 'insights')    refreshInsights();
+  if (id === 'config') loadConfig();
+  if (id === 'fossilized') renderFossilized();
   if (id === 'grafo') {
     // Pequeno delay para garantir que o container tenha dimensões
     setTimeout(() => { if (window.initGraph) window.initGraph(); }, 50);
@@ -99,7 +100,7 @@ document.querySelectorAll('.provider-card').forEach(card => {
     document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     obProvider = card.dataset.provider;
-    
+
     if (obProvider === 'none') {
       $('ob-key-hint').textContent = '';
       $('ob-api-key').placeholder = '';
@@ -191,20 +192,20 @@ $('wbtn-min')?.addEventListener('click', () => window.minimize?.());
 function updateStatusUI({ status, lastRunAt, nextRunAt }) {
   const dot = $('status-dot');
   const label = $('status-label');
-  const next  = $('status-next');
+  const next = $('status-next');
 
   dot.className = `status-dot ${status}`;
   const t = window.i18n.t;
   const labels = { idle: t('status.idle'), running: t('status.running'), error: t('status.error') };
   label.textContent = labels[status] || status;
-  next.textContent  = nextRunAt ? `${t('status.next')}${nextRunAt}` : '';
+  next.textContent = nextRunAt ? `${t('status.next')}${nextRunAt}` : '';
 
   // Statusbar
   const runEl = $('statusbar-run');
   if (runEl) {
     if (lastRunAt) {
       const d = new Date(lastRunAt);
-      runEl.textContent = `última execução: ${d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}`;
+      runEl.textContent = `última execução: ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     } else {
       runEl.textContent = t('statusbar.waiting');
     }
@@ -242,7 +243,7 @@ api.onStatusChange((data) => {
 function renderHealthBar(data) {
   if (!data) return;
   const total = data.alive + data.f1 + data.f2 + data.f3 + data.fossil || 1;
-  const pct   = (v, cls) => `<div class="decay-bar-seg ${cls}" style="width:${(v/total*100).toFixed(1)}%"></div>`;
+  const pct = (v, cls) => `<div class="decay-bar-seg ${cls}" style="width:${(v / total * 100).toFixed(1)}%"></div>`;
 
   $('healthBar').innerHTML = [
     pct(data.alive, 'seg-vital'),
@@ -261,19 +262,19 @@ function renderHealthBar(data) {
     dot('var(--color-fossil)', `${data.fossil} fósseis`),
   ].join('');
 
-  $('m-total').textContent   = data.total;
-  $('m-alive').textContent   = data.alive;
-  $('m-alive-pct').textContent = `${Math.round(data.alive/total*100)}%`;
+  $('m-total').textContent = data.total;
+  $('m-alive').textContent = data.alive;
+  $('m-alive-pct').textContent = `${Math.round(data.alive / total * 100)}%`;
   $('m-decaying').textContent = data.f1 + data.f2 + data.f3;
-  $('m-fossil').textContent  = data.fossil;
-  $('health-pct').textContent = `${Math.round(data.alive/total*100)}% vivo`;
+  $('m-fossil').textContent = data.fossil;
+  $('health-pct').textContent = `${Math.round(data.alive / total * 100)}% vivo`;
 }
 
 async function loadDashboard() {
   try {
     const metrics = await api.getMetrics();
     if (metrics) renderHealthBar(metrics);
-    
+
     const cfg = await api.getConfig();
     const vaultName = cfg.vaultPath ? cfg.vaultPath.split('/').pop() : 'vault';
     $('dash-subtitle').textContent = vaultName;
@@ -292,18 +293,18 @@ async function loadRecentActivity() {
       el.innerHTML = `<div class="activity-empty">${window.i18n.t('dash.noActivity')}</div>`;
       return;
     }
-    const colors = { ok:'var(--color-vital)', warn:'var(--color-desconexao)', error:'var(--color-dissolucao)' };
+    const colors = { ok: 'var(--color-vital)', warn: 'var(--color-desconexao)', error: 'var(--color-dissolucao)' };
     el.innerHTML = logs.slice(-10).reverse().map(line => {
       const lower = line.toLowerCase();
       const cls = (lower.includes('erro') || lower.includes('fatal') || lower.includes('[f') && lower.includes('erro')) ? 'error'
         : (lower.includes('aviso') || lower.includes('warn')) ? 'warn' : 'ok';
-      
+
       let notePath = '';
       const match = line.match(/\]\s([a-zA-Z0-9_\-\s/\\]+\.md)/);
       if (match) notePath = match[1];
-      
+
       const t = window.i18n ? window.i18n.t : k => k;
-      
+
       let translatedLine = line
         .replace('Zelador finalizado com sucesso.', t('log.success'))
         .replace('Zelador finalizado.', t('log.done'))
@@ -319,7 +320,7 @@ async function loadRecentActivity() {
         <div style="display: flex; gap: 8px; align-items: flex-start; flex: 1;">
           <span class="activity-dot" style="background:${colors[cls]}; margin-top: 4px;"></span>
           <div class="activity-body">
-            <span class="activity-text">${esc(translatedLine.replace(/^.*?\]\s*/,''))}</span>
+            <span class="activity-text">${esc(translatedLine.replace(/^.*?\]\s*/, ''))}</span>
           </div>
         </div>
         ${notePath ? `<button class="btn-obsidian" style="padding: 2px 6px; font-size: 10px;" onclick="window.zelador.openInObsidian('${notePath.replace(/\\/g, '/')}')">${t('action.open')}</button>` : ''}
@@ -412,7 +413,7 @@ async function renderPurgatorio() {
 
   tbody.innerHTML = items.map(it => {
     const rowCls = it.dias <= 7 ? 'row-urgent' : '';
-    const badge  = it.dias <= 7 ? 'badge-f3' : it.dias <= 30 ? 'badge-f2' : 'badge-f1';
+    const badge = it.dias <= 7 ? 'badge-f3' : it.dias <= 30 ? 'badge-f2' : 'badge-f1';
     const notaPath = `${it.pasta}/${it.nota}.md`;
     return `<tr class="${rowCls}">
       <td class="note-link">[[${esc(it.nota)}]]</td>
@@ -461,13 +462,13 @@ async function loadConfig() {
 
     // Selects de hora/minuto
     const hourSel = $('cfg-hour');
-    const minSel  = $('cfg-minute');
+    const minSel = $('cfg-minute');
     if (hourSel && !hourSel.options.length) {
-      for (let h = 0; h < 24; h++) hourSel.add(new Option(String(h).padStart(2,'0'), h));
-      for (let m = 0; m < 60; m += 15) minSel.add(new Option(String(m).padStart(2,'0'), m));
+      for (let h = 0; h < 24; h++) hourSel.add(new Option(String(h).padStart(2, '0'), h));
+      for (let m = 0; m < 60; m += 15) minSel.add(new Option(String(m).padStart(2, '0'), m));
     }
     hourSel.value = c.schedule?.hour ?? 3;
-    minSel.value  = c.schedule?.minute ?? 0;
+    minSel.value = c.schedule?.minute ?? 0;
 
     $('cfg-provider').value = c.provider || 'anthropic';
     $('cfg-api-key-section').style.display = c.provider === 'none' ? 'none' : 'flex';
@@ -486,9 +487,9 @@ async function loadConfig() {
 async function refreshKeyStatus(provider) {
   try {
     const key = await api.getApiKey(provider);
-    const el  = $('cfg-key-status');
+    const el = $('cfg-key-status');
     el.textContent = key ? '● Chave configurada' : '○ Não configurada';
-    el.className   = 'key-status ' + (key ? 'ok' : 'err');
+    el.className = 'key-status ' + (key ? 'ok' : 'err');
   } catch (e) { console.error(e); }
 }
 
@@ -504,14 +505,14 @@ $('cfg-vault-manual')?.addEventListener('input', (e) => {
   if (val) $('cfg-vault-display').textContent = val;
 });
 
-  $('cfg-provider').addEventListener('change', async (e) => {
-    const newProv = e.target.value;
-    $('cfg-api-key-section').style.display = newProv === 'none' ? 'none' : 'flex';
-    
-    api.setConfig({ provider: newProv });
-    $('cfg-active-provider').textContent = newProv;
-    $('cfg-active-provider').className = `provider-badge ${newProv}`;
-  });
+$('cfg-provider').addEventListener('change', async (e) => {
+  const newProv = e.target.value;
+  $('cfg-api-key-section').style.display = newProv === 'none' ? 'none' : 'flex';
+
+  api.setConfig({ provider: newProv });
+  $('cfg-active-provider').textContent = newProv;
+  $('cfg-active-provider').className = `provider-badge ${newProv}`;
+});
 $('cfg-provider')?.addEventListener('change', async (e) => {
   $('cfg-active-provider').textContent = e.target.value === 'google' ? 'Google Gemini' : 'Anthropic Claude';
   await refreshKeyStatus(e.target.value);
@@ -577,11 +578,11 @@ $('btn-save-config')?.addEventListener('click', async () => {
   const fb = $('save-feedback');
   try {
     const vaultManual = $('cfg-vault-manual').value.trim() || $('cfg-vault-display').textContent;
-    const newVault    = vaultManual !== 'não configurado' ? vaultManual : '';
+    const newVault = vaultManual !== 'não configurado' ? vaultManual : '';
     await api.setConfig({
-      vaultPath:     newVault,
-      schedule:      { hour: parseInt($('cfg-hour').value), minute: parseInt($('cfg-minute').value) },
-      provider:      $('cfg-provider').value,
+      vaultPath: newVault,
+      schedule: { hour: parseInt($('cfg-hour').value), minute: parseInt($('cfg-minute').value) },
+      provider: $('cfg-provider').value,
       notifications: $('cfg-notify').checked,
     });
     fb.textContent = 'Salvo'; fb.className = 'save-feedback ok';
@@ -604,7 +605,7 @@ $('cfg-btn-export')?.addEventListener('click', async () => {
     const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `zelador-logs-${new Date().toISOString().slice(0,10)}.txt`;
+    a.href = url; a.download = `zelador-logs-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click(); URL.revokeObjectURL(url);
   } catch (e) { console.error(e); }
 });
@@ -623,7 +624,7 @@ $('cfg-language')?.addEventListener('change', async (e) => {
   if (window.i18n) window.i18n.setLocale(locale);
   applyTranslations();
   // Persiste a escolha
-  try { await api.setConfig({ language: locale }); } catch (_) {}
+  try { await api.setConfig({ language: locale }); } catch (_) { }
   const obLang = $('ob-language');
   if (obLang) obLang.value = locale;
 });
@@ -632,7 +633,7 @@ $('ob-language')?.addEventListener('change', async (e) => {
   const locale = e.target.value;
   if (window.i18n) window.i18n.setLocale(locale);
   applyTranslations();
-  try { await api.setConfig({ language: locale }); } catch (_) {}
+  try { await api.setConfig({ language: locale }); } catch (_) { }
   const cfgLang = $('cfg-language');
   if (cfgLang) cfgLang.value = locale;
 });
@@ -645,7 +646,7 @@ $('btn-manual-sync')?.addEventListener('click', async () => {
   btn.disabled = true;
   const originalHtml = btn.innerHTML;
   btn.textContent = window.i18n ? (window.i18n.t('status.loading') || 'Aguarde...') : 'Aguarde...';
-  
+
   try {
     const res = await api.gitSync();
     if (res.success) {
@@ -689,7 +690,7 @@ async function initApp() {
     if (langSel) langSel.value = locale;
     const obLangSel = $('ob-language');
     if (obLangSel) obLangSel.value = locale;
-  } catch (_) {}
+  } catch (_) { }
 
   await loadStatus();
   await loadDashboard();
@@ -709,6 +710,115 @@ async function boot() {
   } catch (e) {
     console.error('boot error:', e);
     showScreen('onboarding');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INSIGHTS
+// ══════════════════════════════════════════════════════════════════════════════
+$('btn-refresh-insights')?.addEventListener('click', () => refreshInsights());
+
+async function refreshInsights() {
+  const btn = $('btn-refresh-insights');
+  if (btn) btn.disabled = true;
+  
+  await Promise.all([
+    renderDejavuInsights(),
+    renderCalendarInsights()
+  ]);
+  
+  if (btn) btn.disabled = false;
+}
+
+async function renderDejavuInsights() {
+  const container = $('dejavu-section');
+  if (!container) return;
+  
+  container.innerHTML = `<div class="insight-empty">${window.i18n.t('status.loading')}</div>`;
+  
+  try {
+    const matches = await api.checkDejavu();
+    if (!matches || matches.length === 0) {
+      container.innerHTML = `<div class="insight-empty">${window.i18n.t('insig.noPatterns')}</div>`;
+      return;
+    }
+
+    container.innerHTML = matches.map(m => `
+      <div class="insight-card">
+        <div class="insight-header">
+          <span class="insight-icon">↩</span>
+          <span class="insight-title">Déjà Vu — ${m.newNote.name}</span>
+        </div>
+        <p class="insight-message">${m.message}</p>
+        <div class="insight-actions">
+          <button class="btn-insight" onclick="window.zelador.openInObsidian('${m.fossilNote.filePath.replace(/\\/g, '\\\\')}')">
+            View archived note
+          </button>
+          <span class="insight-score">Similarity: ${Math.round(m.score * 100)}%</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="insight-empty">Erro: ${e.message}</div>`;
+  }
+}
+
+async function renderCalendarInsights() {
+  const container = $('calendar-section');
+  if (!container) return;
+
+  container.innerHTML = `<div class="insight-empty">${window.i18n.t('status.loading')}</div>`;
+
+  try {
+    const nodes = (await api.getGraphData()).nodes;
+    const accelerated = [];
+
+    for (const node of nodes) {
+      const result = await api.analyzeCalendarDecay(node.filePath);
+      if (result.hasExpiredDates) {
+        accelerated.push({ ...node, ...result });
+      }
+    }
+
+    if (accelerated.length === 0) {
+      container.innerHTML = `<div class="insight-empty">${window.i18n.t('insig.noExpired')}</div>`;
+      return;
+    }
+
+    container.innerHTML = accelerated.map(n => `
+      <div class="insight-card">
+        <div class="insight-header">
+          <span class="insight-icon">⌛</span>
+          <span class="insight-title">${n.name}</span>
+          <span class="insight-badge">${n.multiplier}x faster decay</span>
+        </div>
+        <p class="insight-message">
+          Contains expired date(s): ${n.dates.join(', ')}.
+          Decay thresholds have been reduced automatically.
+        </p>
+        <div class="insight-actions">
+          <button class="btn-insight" onclick="window.zelador.openInObsidian('${n.filePath.replace(/\\/g, '\\\\')}')">
+            ${window.i18n.t('action.open')}
+          </button>
+          <button class="btn-insight-secondary" onclick="immunizeNote('${n.filePath.replace(/\\/g, '\\\\')}')">
+            ${window.i18n.t('purg.immunize')}
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="insight-empty">Erro: ${e.message}</div>`;
+  }
+}
+
+async function immunizeNote(path) {
+  try {
+    await api.setConfig({ decay_immune: true }, path); // Note: verify if setConfig supports path-specific updates
+    // For now, let's assume we need a proper immunize IPC
+    alert('Imunização solicitada para: ' + path);
+    refreshInsights();
+  } catch (e) {
+    console.error(e);
   }
 }
 

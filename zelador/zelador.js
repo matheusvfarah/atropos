@@ -86,7 +86,16 @@ async function main() {
     }
 
     // ── Resolve config da pasta ──
-    const effectiveConfig = resolveConfig(relativePath, config);
+    let effectiveConfig = resolveConfig(relativePath, config);
+
+    // ── Aplicar calendar decay se habilitado nas configurações ──
+    if (config.global.calendar_decay !== false) {
+      const { applyCalendarDecay } = require('./modules/calendarDecay');
+      effectiveConfig = applyCalendarDecay(effectiveConfig, filePath);
+      if (effectiveConfig._calendarAccelerated) {
+        log(`[calendar] ${noteTitle}: decay ${effectiveConfig._calendarMultiplier}x mais rápido (data expirada detectada)`);
+      }
+    }
 
     // ── Imunidade por pasta ──
     if (effectiveConfig.decay_immune === true) {
