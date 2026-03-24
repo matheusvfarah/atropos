@@ -338,18 +338,28 @@ cd zelador && npm install && cd ..
 npm start
 ```
 
-To simulate note inactivity for testing:
+### Development and Testing
+
+#### Vault Override (Developer Mode)
+
+For development and debugging, you can run the Zelador daemon against a specific test vault using the `ZELADOR_VAULT_OVERRIDE` environment variable. This prevents accidental modifications to your primary vault.
 
 ```bash
-# Triggers Phase 1 (35 days inactive)
-touch -t $(date -v-35d +%Y%m%d%H%M) vault/notes/test-note.md
-
-# Triggers Phase 3 (95 days inactive)
-touch -t 202312010000 vault/notes/test-note.md
+# Run the daemon against a test vault
+ZELADOR_VAULT_OVERRIDE=/path/to/test-vault node zelador/zelador.js
 ```
 
-**Commit conventions:** messages in English, format `type: description`
-Examples: `feat: add resurrection module`, `fix: regex escaping for special chars`
+#### Functional Testing Framework
+
+The repository includes a functional testing suite designed to verify decay phases and IPC integrity. 
+
+1. **Setup Test Vault:** Initialize a Git repository in your test folder and create a few sample `.md` files.
+2. **Age Files:** To simulate inactivity without waiting for weeks, use the `touch` command (or the `aging.js` script if available) to set back the modification time (mtime) of your notes.
+   ```bash
+   # Set mtime to 35 days ago (triggers Phase 1)
+   touch -t $(date -v-35d +%Y%m%d%0000) test-vault/note.md
+   ```
+3. **Run Suite:** Execute the Zelador using the override. The system will process notes according to their configuration, creating Git snapshots and breaking links as needed.
 
 **Security:** API keys must never appear in logs, commits, or error messages — not even partially.
 

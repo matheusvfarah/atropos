@@ -17,7 +17,7 @@ const { DEFAULTS, DECAY_CONFIG_FILE, ZELADOR_DIR } = require('./config/defaults'
 // Configuração de paths
 // zelador/ fica dentro do vault — o vault é um nível acima
 // ─────────────────────────────────────────────────────────────────────────────
-const VAULT_PATH = path.resolve(__dirname, '..');
+const VAULT_PATH = process.env.ZELADOR_VAULT_OVERRIDE || path.resolve(__dirname, '..');
 
 function log(msg) {
   console.log(`[${new Date().toISOString()}] ${msg}`);

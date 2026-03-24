@@ -23,7 +23,14 @@ async function getPurgatoryData(vaultPath, config, resolveConfig) {
     if ((fm.decay_level || 0) >= 3) continue;
 
     const relativePath = getRelativePath(vaultPath, file.filePath);
-    const effectiveConfig = resolveConfig(relativePath, config);
+    let effectiveConfig = resolveConfig(relativePath, config);
+
+    // ── Aplicar calendar decay se habilitado nas configurações (Bug E FIX) ──
+    if (config.global && config.global.calendar_decay !== false) {
+      const { applyCalendarDecay } = require('./calendarDecay');
+      effectiveConfig = applyCalendarDecay(effectiveConfig, file.filePath);
+    }
+
     if (effectiveConfig.decay_immune) continue;
 
     // Calcular dias restantes até F3
@@ -40,9 +47,13 @@ async function getPurgatoryData(vaultPath, config, resolveConfig) {
     const daysInactive = inactivityMs / (1000 * 60 * 60 * 24);
     const daysUntilF3 = Math.ceil(effectiveConfig.phase3_days - daysInactive);
 
-    // Só incluir se vai fossilizar nos próximos 30 dias
-    if (daysUntilF3 > 30) continue;
-    // Já fossilizou ou passou do threshold — não incluir
+    // Só incluir se vai fossilizar nos próximos 30 dias OU se já está na Fase 2
+    const isAtRiskOfF3 = daysUntilF3 <= 30;
+    const isAlreadyPhase2 = (fm.decay_level || 0) >= 2;
+
+    if (!isAtRiskOfF3 && !isAlreadyPhase2) continue;
+
+    // Já fossilizou ou passou muito do threshold — não incluir (exceto se for processo recente)
     if (daysUntilF3 < -7) continue;
 
 
@@ -78,7 +89,7 @@ async function generatePurgatory(vaultPath, config, resolveConfig) {
   const atRisk = await getPurgatoryData(vaultPath, config, resolveConfig);
 
   const urgent = atRisk.filter(n => n.dias <= 7);
-  const thisMonth = atRisk.filter(n => n.dias > 7 && n.dias <= 30);
+  const thisMonth = atRisk.filter(n => n.dias > 7);
 
   // Gerar o markdown
   const now = new Date().toLocaleDateString('pt-BR', {

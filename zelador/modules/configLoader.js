@@ -42,6 +42,9 @@ function resolveConfig(relativePath, config) {
     prefixes.push(segments.slice(0, i).join('/') || '/');
   }
 
+  const { DEFAULT_CONFIG } = require('../config/defaults');
+  const globalDefaults = config.global || DEFAULT_CONFIG;
+
   for (const prefix of prefixes) {
     // Tenta encontrar a config com e sem a barra inicial para ser resiliente
     const folderConfig = (config.folders && config.folders[prefix]) || 
@@ -49,13 +52,13 @@ function resolveConfig(relativePath, config) {
     
     if (folderConfig) {
       if (folderConfig.decay_immune === true) {
-        return { ...config.global, decay_immune: true };
+        return { ...globalDefaults, decay_immune: true };
       }
-      return { ...config.global, ...folderConfig };
+      return { ...globalDefaults, ...folderConfig };
     }
   }
 
-  return { ...config.global };
+  return { ...globalDefaults };
 }
 
 module.exports = { loadConfig, resolveConfig };

@@ -78,7 +78,7 @@ function ensureDecaySince(currentData, inactivityMs) {
 function applyPhase1(filePath, currentData, inactivityMs) {
   if ((currentData.decay_level ?? 0) >= 1) return false;
 
-  const lastActivity = toISODate(new Date(Date.now() - inactivityMs));
+  const lastActivity = currentData.decay_since || toISODate(new Date(Date.now() - inactivityMs));
   writeFrontmatter(filePath, { 
     decay_level: 1, 
     decay_since: lastActivity 

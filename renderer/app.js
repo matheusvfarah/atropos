@@ -412,8 +412,12 @@ async function renderPurgatorio() {
   }
 
   tbody.innerHTML = items.map(it => {
-    const rowCls = it.dias <= 7 ? 'row-urgent' : '';
-    const badge = it.dias <= 7 ? 'badge-f3' : it.dias <= 30 ? 'badge-f2' : 'badge-f1';
+    const isUrgent = it.dias <= 7 || it.decayLevel >= 3;
+    const rowCls = isUrgent ? 'row-urgent' : '';
+    
+    let badge = 'badge-f1';
+    if (isUrgent) badge = 'badge-f3';
+    else if (it.dias <= 30 || it.decayLevel >= 2) badge = 'badge-f2';
     const notaPath = `${it.pasta}/${it.nota}.md`;
     return `<tr class="${rowCls}">
       <td class="note-link">[[${esc(it.nota)}]]</td>
@@ -495,10 +499,15 @@ async function loadConfig() {
 }
 
 async function refreshKeyStatus(provider) {
+  const el = $('cfg-key-status');
+  if (provider === 'none') {
+    el.textContent = '○ IA desativada';
+    el.className = 'key-status';
+    return;
+  }
   try {
     const key = await api.getApiKey(provider);
-    const el = $('cfg-key-status');
-    el.textContent = key ? '● Chave configurada' : '○ Não configurada';
+    el.textContent = key ? '● Chave configurada' : '○ Não configurada (Opcional)';
     el.className = 'key-status ' + (key ? 'ok' : 'err');
   } catch (e) { console.error(e); }
 }

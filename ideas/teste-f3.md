@@ -9,3 +9,15 @@ decay_immune: true
 > [!fossil] Nota dissolvida em 21/03/2026
 >**Resumo:** Ideias para um sistema de produtividade pessoal com inteligência artificial para organização automática de tarefas e projetos.
 > [Recuperar nota original](_fossilized/2026-03/teste-f3.md)
+
+
+> [!ai] Conexão Semântica Descoberta
+> [[ideia-app-restaurante]] (similaridade: 80%)
+
+
+> [!ai] Conexão Semântica Descoberta
+> [[nota-imune]] (similaridade: 77%)
+
+
+> [!ai] Conexão Semântica Descoberta
+> [[nota-purgatorio]] (similaridade: 83%)

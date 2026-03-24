@@ -176,7 +176,7 @@ async function findAllReferences(vaultPath, noteName, decayingFilePath) {
 * @returns {Promise<{ filesModified: number, totalLinksRemoved: number }>}
 */
 async function breakLinks(vaultPath, noteName, decayingFilePath) {
-  log(`Iniciando quebra de links para: "${noteName}"`, noteName);
+  log(`Iniciando quebra de links para: "${noteName}" (vault: ${vaultPath})`, noteName);
 
   const refs = await findAllReferences(vaultPath, noteName, decayingFilePath);
 

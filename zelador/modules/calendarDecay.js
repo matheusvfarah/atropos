@@ -12,9 +12,13 @@ const QUARTER_MONTHS = { '1': 3, '2': 6, '3': 9, '4': 12 };
  */
 function extractDates(content) {
   const dates = [];
+  
+  // Remove frontmatter para não confundir decay_since com data expulsa no texto
+  const body = content.replace(/^---[\s\S]*?---/, '');
+  const target = body || content;
 
   // ISO dates: 2025-03-15
-  const isoMatches = content.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/g);
+  const isoMatches = target.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/g);
   for (const match of isoMatches) {
     const d = new Date(`${match[1]}-${match[2]}-${match[3]}`);
     if (!isNaN(d)) dates.push(d);

@@ -16,7 +16,7 @@ const DEFAULTS = {
 const MS_PER_DAY = 24* 60* 60* 1000;
 
 // Buffer de segurança: ignora arquivos modificados nas últimas 24h
-const SAFETY_BUFFER_MS = 24* 60* 60* 1000;
+const SAFETY_BUFFER_MS = 24 * 60 * 60 * 1000; // 24h
 
 // Janela de alerta do Purgatório: listar notas que vão para F3 em até N dias
 const PURGATORY_WARN_DAYS = 30;

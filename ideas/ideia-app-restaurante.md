@@ -21,3 +21,11 @@ Um conceito para unificar sistemas de gestão de restaurantes em uma única inte
 
 > [!ai] Conexão Semântica Descoberta
 > [[nota-purgatorio-teste]] (similaridade: 86%)
+
+
+> [!ai] Conexão Semântica Descoberta
+> [[nota-imune]] (similaridade: 81%)
+
+
+> [!ai] Conexão Semântica Descoberta
+> [[nota-purgatorio]] (similaridade: 85%)
