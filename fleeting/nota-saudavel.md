@@ -16,4 +16,4 @@ E com heading: nota-alvo-f2.
 
 
 > [!ai] Conexão Semântica Descoberta
-> [[ideia-app-restaurante]] (similaridade: 76%)
+> ideia-app-restaurante (similaridade: 76%)
