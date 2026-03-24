@@ -45,11 +45,27 @@ async function getPurgatoryData(vaultPath, config, resolveConfig) {
     // Já fossilizou ou passou do threshold — não incluir
     if (daysUntilF3 < -7) continue;
 
+    console.log(JSON.stringify({
+      nota: path.basename(file.filePath),
+      phase3_days: effectiveConfig.phase3_days,
+      inactivityMs,
+      daysInactive: +(daysInactive.toFixed(1)),
+      daysUntilF3,
+      motivo_exclusao:
+        fm.decay_immune ? 'decay_immune' :
+          fm.status === 'fossilized' ? 'fossilized' :
+            (fm.decay_level || 0) >= 3 ? 'decay_level>=3' :
+              effectiveConfig.decay_immune ? 'config_immune' :
+                daysUntilF3 > 30 ? 'longe_demais' :
+                  daysUntilF3 < -7 ? 'ja_fossilizou' :
+                    'INCLUIDA'
+    }, null, 0));
+
     const noteName = path.basename(file.filePath, '.md');
     let folder = relativePath.split('/').slice(0, -1).join('/');
     if (!folder.startsWith('/')) folder = '/' + folder;
     if (folder === '') folder = '/';
-    
+
     const dissolutionDate = new Date(
       Date.now() + daysUntilF3 * 24 * 60 * 60 * 1000
     ).toLocaleDateString('pt-BR');
@@ -73,7 +89,7 @@ async function getPurgatoryData(vaultPath, config, resolveConfig) {
 async function generatePurgatory(vaultPath, config, resolveConfig) {
   const fs = require('fs');
   const path = require('path');
-  
+
   const atRisk = await getPurgatoryData(vaultPath, config, resolveConfig);
 
   const urgent = atRisk.filter(n => n.dias <= 7);
@@ -137,7 +153,7 @@ async function generatePurgatory(vaultPath, config, resolveConfig) {
   const purgPath = path.join(vaultPath, 'PURGATORIO.md');
   fs.writeFileSync(purgPath, lines.join('\n'), 'utf-8');
 
-  console.log(`[${new Date().toTimeString().slice(0,8)}] [purgatory] PURGATORIO.md atualizado: ${atRisk.length} nota(s) listada(s) (${urgent.length} urgente(s)).`);
+  console.log(`[${new Date().toTimeString().slice(0, 8)}] [purgatory] PURGATORIO.md atualizado: ${atRisk.length} nota(s) listada(s) (${urgent.length} urgente(s)).`);
 
   return { items: atRisk.length, urgent: urgent.length };
 }
