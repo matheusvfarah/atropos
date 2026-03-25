@@ -1,0 +1,7 @@
+{
+  "global": { "phase1_days": 30, "phase2_days": 60, "phase3_days": 90 },
+  "folders": {
+    "evergreen": { "decay_immune": true },
+    "fleeting": { "phase1_days": 7, "phase2_days": 14, "phase3_days": 21 }
+  }
+}

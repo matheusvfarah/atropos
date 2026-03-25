@@ -11,4 +11,3 @@ zelador/.env
 # macOS
 .DS_Store
 node_modules/
-test-vault/
